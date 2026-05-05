@@ -1,0 +1,42 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Java / Spring Boot
+target/
+*.class
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+
+# Node / Nuxt
+node_modules/
+.nuxt/
+.output/
+dist/
+
+# Coverage and caches
+coverage/
+.nyc_output/
+.pytest_cache/
+
+# Docker/local runtime
+tmp/
+data/
+
+# AI brainstorming artifacts
+.superpowers/
