@@ -1,21 +1,14 @@
 spring:
   application:
     name: study-for-read-server
-
----
-spring:
-  config:
-    activate:
-      on-profile: local
-
----
-spring:
-  config:
-    activate:
-      on-profile: test
-
----
-spring:
-  config:
-    activate:
-      on-profile: prod
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/study_for_read}
+    username: ${DATABASE_USERNAME:study_for_read}
+    password: ${DATABASE_PASSWORD:study_for_read}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
