@@ -6,6 +6,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.Optional;
+import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,32 @@ public class TokenService {
                 OffsetDateTime.now().plusMinutes(15).toEpochSecond());
         var encodedPayload = base64Url(payload.getBytes(StandardCharsets.UTF_8));
         return "access." + encodedPayload + "." + sign(encodedPayload);
+    }
+
+    public Optional<AccessTokenSubject> parseAccessToken(String accessToken) {
+        var parts = accessToken.split("\\.", -1);
+        if (parts.length != 3 || !"access".equals(parts[0]) || !MessageDigest.isEqual(
+                sign(parts[1]).getBytes(StandardCharsets.UTF_8),
+                parts[2].getBytes(StandardCharsets.UTF_8))) {
+            return Optional.empty();
+        }
+
+        try {
+            var payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            var payloadParts = payload.split(":", -1);
+            if (payloadParts.length != 3) {
+                return Optional.empty();
+            }
+
+            var expiresAtEpochSecond = Long.parseLong(payloadParts[2]);
+            if (expiresAtEpochSecond <= OffsetDateTime.now().toEpochSecond()) {
+                return Optional.empty();
+            }
+
+            return Optional.of(new AccessTokenSubject(UUID.fromString(payloadParts[0]), payloadParts[1]));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
     }
 
     public String createRefreshToken() {
@@ -72,5 +100,8 @@ public class TokenService {
             result[index * 2 + 1] = HEX[value & 0x0f];
         }
         return new String(result);
+    }
+
+    public record AccessTokenSubject(UUID userId, String email) {
     }
 }
