@@ -25,6 +25,8 @@
 
 ```powershell
 cd "D:\Codex\Study For Read Phone"
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 java -version
 $env:JAVA_HOME
 where.exe java
@@ -33,8 +35,10 @@ where.exe java
 通过条件：
 
 - `java -version` 必须显示 Java 25。
-- `$env:JAVA_HOME` 为空时必须确认 `where.exe java` 指向 JDK 25；非空时必须指向 JDK 25。
-- 如果 active Java 是 8、11、17、21 或其他版本，停止并先执行 `docs/plans/M1-F00-T01-backend-toolchain-preflight.md`，不能直接创建 `server`。
+- `$env:JAVA_HOME` 必须指向 JDK 25。
+- `where.exe java` 的第一项必须是 JDK 25 的 `bin\java.exe`。
+- 如果系统级 Path 里仍有旧 JDK，只要本次 PowerShell 会话已经用上面的命令把 JDK 25 放到第一位，可以继续。
+- 如果激活后 active Java 仍是 8、11、17、21 或其他版本，停止并先执行 `docs/plans/M1-F00-T01-backend-toolchain-preflight.md`，不能直接创建 `server`。
 
 失败处理：
 

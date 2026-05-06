@@ -93,6 +93,8 @@ Run:
 
 ```powershell
 cd "D:\Codex\Study For Read Phone\server"
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 .\mvnw.cmd test
 ```
 
@@ -118,6 +120,8 @@ Expected result:
 
 ```powershell
 cd "D:\Codex\Study For Read Phone\server"
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 .\mvnw.cmd test
 ```
 

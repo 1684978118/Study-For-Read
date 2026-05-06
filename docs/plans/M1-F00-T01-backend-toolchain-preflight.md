@@ -66,6 +66,8 @@ Run:
 ```powershell
 cd "D:\Codex\Study For Read Phone"
 git status --short
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 java -version
 $env:JAVA_HOME
 where.exe java
@@ -76,26 +78,29 @@ Expected result:
 
 - `git status --short` runs successfully.
 - `java -version` reports major version `25`.
-- `$env:JAVA_HOME`, when non-empty, points to a JDK 25 directory.
-- `where.exe java` resolves to the intended JDK 25 `bin\java.exe`.
+- `$env:JAVA_HOME` points to a JDK 25 directory.
+- `where.exe java` lists the intended JDK 25 `bin\java.exe` first.
 - `Test-Path "D:\Codex\Study For Read Phone\server"` is `False`, or the existing `server` directory is empty and contains no business code.
 
 ## Implementation Steps
 
 - [ ] Step 1: Read all `Read First` files.
 - [ ] Step 2: Run `git status --short`.
-- [ ] Step 3: Run `java -version`.
-- [ ] Step 4: Print `$env:JAVA_HOME`.
-- [ ] Step 5: Run `where.exe java`.
-- [ ] Step 6: Check whether `D:\Codex\Study For Read Phone\server` exists.
-- [ ] Step 7: If active Java is not JDK 25, stop and report the exact active Java version and `JAVA_HOME`.
-- [ ] Step 8: If JDK 25 is active and no conflicting `server` code exists, recommend `M1-F01-T01-server-project-skeleton.md`.
+- [ ] Step 3: Activate user-level JDK 25 for this PowerShell session by setting `$env:JAVA_HOME` from the user environment and prepending `$env:JAVA_HOME\bin` to `$env:Path`.
+- [ ] Step 4: Run `java -version`.
+- [ ] Step 5: Print `$env:JAVA_HOME`.
+- [ ] Step 6: Run `where.exe java`.
+- [ ] Step 7: Check whether `D:\Codex\Study For Read Phone\server` exists.
+- [ ] Step 8: If active Java is not JDK 25 after activation, stop and report the exact active Java version and `JAVA_HOME`.
+- [ ] Step 9: If JDK 25 is active and no conflicting `server` code exists, recommend `M1-F01-T01-server-project-skeleton.md`.
 
 ## Verification Commands
 
 ```powershell
 cd "D:\Codex\Study For Read Phone"
 git status --short
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+$env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 java -version
 $env:JAVA_HOME
 where.exe java
