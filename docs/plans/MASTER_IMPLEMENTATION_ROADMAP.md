@@ -53,7 +53,7 @@
 | Milestone | 计划文件 | 入口任务卡 | 核心目标 | 前置条件 | 停止条件 |
 | --- | --- | --- | --- | --- | --- |
 | M0 Repository Safety | `docs/plans/M0_REPOSITORY_SAFETY.md` | `docs/plans/M0-F01-T01-git-baseline.md` | 初始化 Git 安全基线，让后续 AI 修改可追踪 | 无 | Git 不可用；目标目录不是新项目；需要修改业务文件 |
-| M1 Backend Foundation | `docs/plans/M1_BACKEND_FOUNDATION.md` | `docs/plans/M1-F01-T01-server-project-skeleton.md` | 创建 Spring Boot 后端、数据库迁移、统一响应、JWT 认证 | 规格文档已存在，JDK 25 LTS 可用 | JDK 25 LTS 不可用；任务卡外文件必须修改；认证设计和 API 合同冲突 |
+| M1 Backend Foundation | `docs/plans/M1_BACKEND_FOUNDATION.md` | `docs/plans/M1-F00-T01-backend-toolchain-preflight.md` | 创建 Spring Boot 后端、数据库迁移、统一响应、JWT 认证 | 规格文档已存在，JDK 25 LTS 可用 | JDK 25 LTS 不可用；任务卡外文件必须修改；认证设计和 API 合同冲突 |
 | M2 Reading Sync Backend | `docs/plans/M2_READING_SYNC_BACKEND.md` | `docs/plans/M2-F01-T01-user-books-persistence.md` | 同步书籍指纹、标题、语言和阅读位置，不保存原文 | M1 完成 | 需要保存原书、章节或段落文本；用户隔离无法测试 |
 | M3 Vocabulary Backend | `docs/plans/M3_VOCABULARY_BACKEND.md` | `docs/plans/M3-F01-T01-lexemes-persistence.md` | 拆分公共词条和用户私有词卡复习状态 | M1 完成；M2 可选 | 公共词条和用户状态混在一张表；私有整句要进入公共词条 |
 | M4 Lookup Translation Backend | `docs/plans/M4_LOOKUP_TRANSLATION_BACKEND.md` | `docs/plans/M4-F01-T01-translation-events-persistence.md` | 点词、段落翻译、注音/分词统一走后端 | M1 完成；M3 建议完成 | 翻译日志要保存原文或译文；出现全书翻译或全文缓存 |
@@ -122,7 +122,8 @@ flowchart TD
 当前仍处于规划完成后的开工准备阶段。下一步不是继续扩展大规划，而是：
 
 1. 运行 `IMPLEMENTATION_START_GATE.md` 的人工检查。
-2. 先进入 `M0-F01-T01-git-baseline.md`，建立版本控制安全基线。
-3. M0 通过后，进入 `M1-F01-T01-server-project-skeleton.md`。
-4. 只完成 M1 的第一张任务卡。
-5. 完成后根据验证结果决定是否进入 M1 第二张任务卡。
+2. 如果 M0 尚未完成，先进入 `M0-F01-T01-git-baseline.md`，建立版本控制安全基线。
+3. 如果 M0 已完成，进入 `M1-F00-T01-backend-toolchain-preflight.md`，确认 JDK 25 LTS 是当前 active Java。
+4. 工具链预检通过后，进入 `M1-F01-T01-server-project-skeleton.md`。
+5. 只完成 M1 的第一张编码任务卡。
+6. 完成后根据验证结果决定是否进入 M1 第二张任务卡。

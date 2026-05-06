@@ -30,6 +30,7 @@ This milestone does not:
 ## Required Environment
 
 - JDK 25 LTS.
+- Spring Boot 4.0.x, pinned by the first server skeleton task to `4.0.5` unless that version is unavailable from Maven Central.
 - Network access for dependency download.
 - PowerShell on Windows.
 
@@ -37,6 +38,7 @@ If JDK 25 LTS is not available, stop and report the blocker. Do not downgrade th
 
 ## Task Order
 
+0. `M1-F00-T01-backend-toolchain-preflight.md`
 1. `M1-F01-T01-server-project-skeleton.md`
 2. `M1-F01-T02-postgresql-flyway-config.md`
 3. `M1-F02-T01-api-envelope-error-codes.md`

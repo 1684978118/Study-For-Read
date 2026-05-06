@@ -53,7 +53,7 @@ Web admin:
 
 Backend:
 
-- Spring Boot 4.0.x.
+- Spring Boot 4.0.x. The first backend skeleton pins `4.0.5`; later patch upgrades must update the task card before coding.
 - Java 25 LTS.
 - PostgreSQL.
 - Flyway or Liquibase for database migrations.

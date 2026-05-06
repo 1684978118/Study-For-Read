@@ -19,6 +19,7 @@ This task only does:
 - Create `server` project structure.
 - Configure Maven wrapper.
 - Configure Java 25 LTS.
+- Configure Spring Boot parent version `4.0.5`.
 - Add Spring Boot dependencies needed by Milestone 1.
 - Add one smoke test proving the application context loads.
 
@@ -106,10 +107,12 @@ Expected result:
 - [ ] Step 2: Generate or create a Maven Spring Boot project using package `com.studyforread.server`.
 - [ ] Step 3: Use artifact id `server` and application class `StudyForReadServerApplication`.
 - [ ] Step 4: Configure Java version `25`.
-- [ ] Step 5: Include dependencies: Spring Web, Spring Security, Spring Data JPA, Validation, PostgreSQL driver, Flyway, Spring Boot Actuator, Spring Boot Test.
-- [ ] Step 6: Add `application.yml` with only app name and empty profile placeholders; do not add real secrets.
-- [ ] Step 7: Add the context loading test shown above.
-- [ ] Step 8: Run the verification command.
+- [ ] Step 5: Use Spring Boot `4.0.5`; do not use Spring Boot 3.x, milestone, release candidate, snapshot, Gradle, or FastAPI.
+- [ ] Step 6: Include dependencies: `spring-boot-starter-web`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa`, `spring-boot-starter-validation`, `org.postgresql:postgresql`, `org.flywaydb:flyway-core`, `spring-boot-starter-actuator`, and `spring-boot-starter-test`.
+- [ ] Step 7: Configure the Maven compiler release to `25`.
+- [ ] Step 8: Add `application.yml` with only app name and empty profile placeholders; do not add real secrets.
+- [ ] Step 9: Add the context loading test shown above.
+- [ ] Step 10: Run the verification command.
 
 ## Verification Commands
 
@@ -122,6 +125,8 @@ cd "D:\Codex\Study For Read Phone\server"
 
 - `server/pom.xml` exists.
 - Maven wrapper exists.
+- `server/pom.xml` uses Spring Boot `4.0.5`.
+- `server/pom.xml` configures Java release `25`.
 - Main application class exists under `com.studyforread.server`.
 - Context smoke test exists.
 - Verification command either passes or reports a real environment blocker such as missing JDK 25 LTS.
@@ -129,6 +134,7 @@ cd "D:\Codex\Study For Read Phone\server"
 ## Stop Conditions
 
 - JDK 25 LTS is missing.
+- Spring Boot `4.0.5` is unavailable from Maven Central.
 - Network cannot download dependencies.
 - A `server` project already exists with conflicting files.
 - Any implementation requires modifying files outside Allowed Files.
