@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: study-for-read-server
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
