@@ -16,6 +16,7 @@ Make the `test` Spring profile able to start a real datasource, JPA, and Flyway 
 
 This task only does:
 
+- Replace the direct `org.flywaydb:flyway-core` dependency with the Spring Boot 4 Flyway starter so Flyway auto-configuration is available.
 - Add a test-scope H2 dependency.
 - Configure `application-test.yml` to use H2 in PostgreSQL compatibility mode.
 - Re-enable datasource, JPA, and Flyway for the `test` profile.
@@ -111,15 +112,16 @@ $env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 
 Expected red result:
 
-- Test fails because `application-test.yml` currently excludes datasource and JPA auto-configuration, disables Flyway, and no H2 dependency exists.
+- Test fails because `application-test.yml` currently excludes datasource and JPA auto-configuration, disables Flyway, no H2 dependency exists, or Flyway auto-configuration is unavailable.
 
 ## Implementation Steps
 
 - [ ] Step 1: Read all `Read First` files.
 - [ ] Step 2: Create `TestDatasourceContextTest` exactly for datasource and Flyway availability.
 - [ ] Step 3: Run the red test command and confirm failure is caused by missing datasource, missing Flyway, or missing H2 driver.
-- [ ] Step 4: Add `com.h2database:h2` as a `test` scope dependency in `server/pom.xml`.
-- [ ] Step 5: Replace `application-test.yml` exclusions with a test datasource:
+- [ ] Step 4: In `server/pom.xml`, replace the direct `org.flywaydb:flyway-core` dependency with `org.springframework.boot:spring-boot-starter-flyway`. Spring Boot 4 keeps Flyway auto-configuration in the Boot Flyway module; `flyway-core` alone is not enough.
+- [ ] Step 5: Add `com.h2database:h2` as a `test` scope dependency in `server/pom.xml`.
+- [ ] Step 6: Replace `application-test.yml` exclusions with a test datasource:
 
 ```yaml
 spring:
@@ -137,8 +139,8 @@ spring:
     locations: classpath:db/migration
 ```
 
-- [ ] Step 6: Run the verification command.
-- [ ] Step 7: Run full backend tests to confirm previous context tests still pass.
+- [ ] Step 7: Run the verification command.
+- [ ] Step 8: Run full backend tests to confirm previous context tests still pass.
 
 ## Verification Commands
 
@@ -155,6 +157,8 @@ $env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 - `TestDatasourceContextTest` passes.
 - Full backend test suite passes.
 - `application-test.yml` no longer excludes datasource, JPA, or Flyway auto-configuration.
+- `server/pom.xml` uses `org.springframework.boot:spring-boot-starter-flyway`.
+- `server/pom.xml` does not keep a direct `org.flywaydb:flyway-core` dependency.
 - H2 dependency is test-scope only.
 - No production datasource settings are changed.
 - No application tables or entities are created in this task.
@@ -163,8 +167,8 @@ $env:Path = (Join-Path $env:JAVA_HOME "bin") + ";" + $env:Path
 
 - H2 cannot run under Java 25.
 - Maven cannot download H2.
+- Maven cannot download `spring-boot-starter-flyway`.
 - Fix requires modifying files outside Allowed Files.
-- A production dependency is required.
 - Test failure is unrelated to datasource, JPA, Flyway, or H2 setup.
 - Any command would delete files or directories in bulk.
 
