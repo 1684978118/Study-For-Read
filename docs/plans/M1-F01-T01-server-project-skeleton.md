@@ -18,7 +18,7 @@ This task only does:
 
 - Create `server` project structure.
 - Configure Maven wrapper.
-- Configure Java 17.
+- Configure Java 25 LTS.
 - Add Spring Boot dependencies needed by Milestone 1.
 - Add one smoke test proving the application context loads.
 
@@ -97,15 +97,15 @@ cd "D:\Codex\Study For Read Phone\server"
 
 Expected result:
 
-- If JDK 17 is missing, command fails with a Java version error. Stop and report.
-- If dependencies download correctly and JDK 17 exists, test passes.
+- If JDK 25 LTS is missing, command fails with a Java version error. Stop and report.
+- If dependencies download correctly and JDK 25 LTS exists, test passes.
 
 ## Implementation Steps
 
 - [ ] Step 1: Confirm `D:\Codex\Study For Read Phone\server` does not already contain business code.
 - [ ] Step 2: Generate or create a Maven Spring Boot project using package `com.studyforread.server`.
 - [ ] Step 3: Use artifact id `server` and application class `StudyForReadServerApplication`.
-- [ ] Step 4: Configure Java version `17`.
+- [ ] Step 4: Configure Java version `25`.
 - [ ] Step 5: Include dependencies: Spring Web, Spring Security, Spring Data JPA, Validation, PostgreSQL driver, Flyway, Spring Boot Actuator, Spring Boot Test.
 - [ ] Step 6: Add `application.yml` with only app name and empty profile placeholders; do not add real secrets.
 - [ ] Step 7: Add the context loading test shown above.
@@ -124,11 +124,11 @@ cd "D:\Codex\Study For Read Phone\server"
 - Maven wrapper exists.
 - Main application class exists under `com.studyforread.server`.
 - Context smoke test exists.
-- Verification command either passes or reports a real environment blocker such as missing JDK 17.
+- Verification command either passes or reports a real environment blocker such as missing JDK 25 LTS.
 
 ## Stop Conditions
 
-- JDK 17 is missing.
+- JDK 25 LTS is missing.
 - Network cannot download dependencies.
 - A `server` project already exists with conflicting files.
 - Any implementation requires modifying files outside Allowed Files.

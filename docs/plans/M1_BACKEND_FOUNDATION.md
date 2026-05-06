@@ -29,11 +29,11 @@ This milestone does not:
 
 ## Required Environment
 
-- JDK 17.
+- JDK 25 LTS.
 - Network access for dependency download.
 - PowerShell on Windows.
 
-If JDK 17 is not available, stop and report the blocker. Do not downgrade the project to Java 8.
+If JDK 25 LTS is not available, stop and report the blocker. Do not downgrade the project to an older Java line without updating `docs/specs/ARCHITECTURE.md` and the M1 task cards.
 
 ## Task Order
 
@@ -56,4 +56,3 @@ Milestone 1 is complete when:
 - Refresh returns new tokens.
 - `/api/v1/auth/me` returns the current user.
 - No endpoint stores or accepts original book text.
-

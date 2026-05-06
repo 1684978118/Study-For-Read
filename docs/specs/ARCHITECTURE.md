@@ -53,8 +53,8 @@ Web admin:
 
 Backend:
 
-- Spring Boot.
-- Java 17.
+- Spring Boot 4.0.x.
+- Java 25 LTS.
 - PostgreSQL.
 - Flyway or Liquibase for database migrations.
 - JWT authentication.

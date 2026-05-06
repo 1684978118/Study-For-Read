@@ -132,7 +132,7 @@ cd "D:\Codex\Study For Read Phone\server"
 
 - Adding a new dependency is required but not listed in this task.
 - Test failure is unrelated to datasource or profile configuration.
-- JDK 17 is missing.
+- JDK 25 LTS is missing.
 - Maven wrapper is missing.
 - Any file outside Allowed Files must be modified.
 
@@ -145,4 +145,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
