@@ -42,9 +42,10 @@ If JDK 25 LTS is not available, stop and report the blocker. Do not downgrade th
 1. `M1-F01-T01-server-project-skeleton.md`
 2. `M1-F01-T02-postgresql-flyway-config.md`
 3. `M1-F02-T01-api-envelope-error-codes.md`
-4. `M1-F03-T01-users-refresh-tokens-persistence.md`
-5. `M1-F04-T01-register-endpoint.md`
-6. `M1-F04-T02-login-refresh-me-endpoints.md`
+4. `M1-F02-T02-test-datasource-profile.md`
+5. `M1-F03-T01-users-refresh-tokens-persistence.md`
+6. `M1-F04-T01-register-endpoint.md`
+7. `M1-F04-T02-login-refresh-me-endpoints.md`
 
 ## Milestone Acceptance
 

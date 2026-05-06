@@ -22,6 +22,10 @@ This task only does:
 - Add repositories.
 - Add repository tests for email uniqueness and refresh token lookup.
 
+Prerequisite:
+
+- `M1-F02-T02-test-datasource-profile.md` must be complete so repository tests can run datasource, JPA, and Flyway in the `test` profile.
+
 This task does not:
 
 - Implement password hashing service.
@@ -90,7 +94,7 @@ Expected red result:
 - [ ] Step 1: Write the two repository tests.
 - [ ] Step 2: Run the red test command and confirm missing class or missing table failure.
 - [ ] Step 3: Create migration `V1__create_users_and_refresh_tokens.sql` using the columns from `DATA_MODEL.md`.
-- [ ] Step 4: In V1, enable `pgcrypto` with `create extension if not exists pgcrypto;` if using `gen_random_uuid()` defaults.
+- [ ] Step 4: Prefer application-generated UUIDs for this migration so the schema can run in the H2 PostgreSQL-compatible test profile. If choosing PostgreSQL `gen_random_uuid()` instead, first create a separate task card for PostgreSQL-backed tests.
 - [ ] Step 5: Ensure `users.email` is unique and constrained to lowercase.
 - [ ] Step 6: Ensure `users.status` has a check constraint for `active` and `disabled`.
 - [ ] Step 7: Ensure `refresh_tokens.token_hash` is `char(64)` and unique.
@@ -121,6 +125,7 @@ cd "D:\Codex\Study For Read Phone\server"
 
 ## Stop Conditions
 
+- `M1-F02-T02-test-datasource-profile.md` is incomplete.
 - Test datasource cannot run migrations.
 - Existing migration numbering conflicts.
 - Any file outside Allowed Files must be modified.
