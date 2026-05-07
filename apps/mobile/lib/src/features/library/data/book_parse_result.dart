@@ -46,3 +46,7 @@ class EmptyBookParseException extends BookParseException {
 class InvalidBookEncodingException extends BookParseException {
   const InvalidBookEncodingException() : super('TXT file is not valid UTF-8');
 }
+
+class EpubParseException extends BookParseException {
+  const EpubParseException(super.message);
+}
