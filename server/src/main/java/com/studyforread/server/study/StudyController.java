@@ -2,6 +2,8 @@ package com.studyforread.server.study;
 
 import com.studyforread.server.api.ApiResponse;
 import com.studyforread.server.api.ErrorCode;
+import com.studyforread.server.study.dto.AnnotateRequest;
+import com.studyforread.server.study.dto.AnnotateResponse;
 import com.studyforread.server.study.dto.LookupRequest;
 import com.studyforread.server.study.dto.LookupResponse;
 import com.studyforread.server.study.dto.TranslateParagraphRequest;
@@ -89,6 +91,28 @@ public class StudyController {
         }
     }
 
+    @PostMapping("/annotate")
+    public ResponseEntity<ApiResponse<AnnotateResponse>> annotate(
+            @RequestBody Map<String, Object> requestBody,
+            Authentication authentication) {
+        try {
+            var userId = UUID.fromString(authentication.getName());
+            var request = parseAndValidateAnnotate(requestBody);
+            return ResponseEntity.ok(ApiResponse.ok(studyService.annotate(userId, request)));
+        } catch (InvalidAnnotateRequestException | IllegalArgumentException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.fail(ErrorCode.VALIDATION_ERROR, "Invalid annotation request"));
+        } catch (StudyService.UnsupportedLanguagePairException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.fail(
+                            ErrorCode.TRANSLATION_UNSUPPORTED_LANGUAGE_PAIR,
+                            "Unsupported language pair"));
+        } catch (StudyService.CurrentUserNotFoundException | NullPointerException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail(ErrorCode.UNAUTHORIZED, "Unauthorized"));
+        }
+    }
+
     private LookupRequest parseAndValidate(Map<String, Object> requestBody) {
         if (requestBody == null) {
             throw new InvalidLookupRequestException();
@@ -122,6 +146,20 @@ public class StudyController {
         return new TranslateParagraphRequest(text, sourceLang, targetLang);
     }
 
+    private AnnotateRequest parseAndValidateAnnotate(Map<String, Object> requestBody) {
+        if (requestBody == null) {
+            throw new InvalidAnnotateRequestException();
+        }
+
+        var text = requiredAnnotationText(requestBody, "text");
+        var sourceLang = requiredAnnotationText(requestBody, "sourceLang");
+        if (text.trim().isBlank() || sourceLang.trim().isBlank()) {
+            throw new InvalidAnnotateRequestException();
+        }
+
+        return new AnnotateRequest(text, sourceLang);
+    }
+
     private boolean hasForbiddenParagraphTranslationFields(Map<String, Object> requestBody) {
         for (var fieldName : PARAGRAPH_TRANSLATION_FORBIDDEN_FIELDS) {
             if (requestBody.containsKey(fieldName)) {
@@ -147,6 +185,14 @@ public class StudyController {
         return value;
     }
 
+    private String requiredAnnotationText(Map<String, Object> requestBody, String fieldName) {
+        var field = requestBody.get(fieldName);
+        if (!(field instanceof String value)) {
+            throw new InvalidAnnotateRequestException();
+        }
+        return value;
+    }
+
     private String optionalText(Map<String, Object> requestBody, String fieldName) {
         var field = requestBody.get(fieldName);
         if (field == null) {
@@ -163,5 +209,8 @@ public class StudyController {
     }
 
     private static class InvalidTranslateParagraphRequestException extends RuntimeException {
+    }
+
+    private static class InvalidAnnotateRequestException extends RuntimeException {
     }
 }

@@ -1,6 +1,9 @@
 package com.studyforread.server.study;
 
 import com.studyforread.server.api.ErrorCode;
+import com.studyforread.server.study.dto.AnnotateRequest;
+import com.studyforread.server.study.dto.AnnotateResponse;
+import com.studyforread.server.study.dto.AnnotatedTokenResponse;
 import com.studyforread.server.study.dto.LexemeLookupResponse;
 import com.studyforread.server.study.dto.LookupRequest;
 import com.studyforread.server.study.dto.LookupResponse;
@@ -190,6 +193,50 @@ public class StudyService {
                 providerResult.providerName(),
                 providerResult.cached(),
                 providerResult.message());
+    }
+
+    @Transactional(noRollbackFor = UnsupportedLanguagePairException.class)
+    public AnnotateResponse annotate(UUID userId, AnnotateRequest request) {
+        var user = userAccountRepository().findById(userId).orElseThrow(CurrentUserNotFoundException::new);
+        var text = request.text().trim();
+        var sourceLang = request.sourceLang().trim();
+        var sourceTextHash = sha256Hex(text);
+        var sourceTextLength = text.length();
+
+        if (!SUPPORTED_SOURCE_LANG.equals(sourceLang)) {
+            saveTranslationEvent(
+                    user,
+                    TranslationRequestType.ANNOTATION,
+                    sourceLang,
+                    "",
+                    null,
+                    sourceTextHash,
+                    sourceTextLength,
+                    false,
+                    ErrorCode.TRANSLATION_UNSUPPORTED_LANGUAGE_PAIR.name());
+            throw new UnsupportedLanguagePairException();
+        }
+
+        var providerResult = studyProviderRouter.annotate(text, sourceLang);
+        saveTranslationEvent(
+                user,
+                TranslationRequestType.ANNOTATION,
+                sourceLang,
+                "",
+                providerResult.providerName(),
+                sourceTextHash,
+                sourceTextLength,
+                true,
+                null);
+
+        var tokens = providerResult.tokens().stream()
+                .map(token -> new AnnotatedTokenResponse(
+                        token.text(),
+                        token.reading(),
+                        token.dictionaryForm(),
+                        token.partOfSpeech()))
+                .toList();
+        return new AnnotateResponse(tokens);
     }
 
     private LookupResponse toResponse(LookupProviderResult providerResult) {
