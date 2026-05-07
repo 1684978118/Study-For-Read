@@ -14,7 +14,8 @@ public record VocabularyCardResponse(
         String privateDefinition,
         String reviewStatus,
         int reviewCount,
-        OffsetDateTime nextReviewAt) {
+        OffsetDateTime nextReviewAt,
+        OffsetDateTime lastReviewedAt) {
 
     public VocabularyCardResponse(
             UUID id,
@@ -28,6 +29,28 @@ public record VocabularyCardResponse(
         this(
                 id,
                 cardType,
+                lexeme,
+                privateSurface,
+                privateDefinition,
+                reviewStatus,
+                reviewCount,
+                nextReviewAt,
+                null);
+    }
+
+    public VocabularyCardResponse(
+            UUID id,
+            String cardType,
+            LexemeSummaryResponse lexeme,
+            String privateSurface,
+            String privateDefinition,
+            String reviewStatus,
+            int reviewCount,
+            OffsetDateTime nextReviewAt,
+            OffsetDateTime lastReviewedAt) {
+        this(
+                id,
+                cardType,
                 lexeme == null ? privateSurface : lexeme.surface(),
                 lexeme == null ? null : lexeme.reading(),
                 lexeme == null ? privateDefinition : lexeme.definition(),
@@ -36,6 +59,7 @@ public record VocabularyCardResponse(
                 privateDefinition,
                 reviewStatus,
                 reviewCount,
-                nextReviewAt);
+                nextReviewAt,
+                lastReviewedAt);
     }
 }

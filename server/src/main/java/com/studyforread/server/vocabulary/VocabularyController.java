@@ -4,6 +4,7 @@ import com.studyforread.server.api.ApiResponse;
 import com.studyforread.server.api.ErrorCode;
 import com.studyforread.server.vocabulary.dto.CreateVocabularyCardRequest;
 import com.studyforread.server.vocabulary.dto.DueVocabularyCardsResponse;
+import com.studyforread.server.vocabulary.dto.ReviewVocabularyCardRequest;
 import com.studyforread.server.vocabulary.dto.VocabularyCardResponse;
 import java.util.Map;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +29,26 @@ public class VocabularyController {
 
     public VocabularyController(VocabularyService vocabularyService) {
         this.vocabularyService = vocabularyService;
+    }
+
+    @PostMapping("/cards/{cardId}/review")
+    public ResponseEntity<ApiResponse<VocabularyCardResponse>> reviewCard(
+            @PathVariable UUID cardId,
+            @RequestBody ReviewVocabularyCardRequest request,
+            Authentication authentication) {
+        try {
+            var userId = UUID.fromString(authentication.getName());
+            return ResponseEntity.ok(ApiResponse.ok(vocabularyService.reviewCard(userId, cardId, request)));
+        } catch (VocabularyService.WordCardNotFoundException exception) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.fail(ErrorCode.WORD_CARD_NOT_FOUND, "Word card not found"));
+        } catch (VocabularyService.InvalidReviewRequestException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.fail(ErrorCode.VALIDATION_ERROR, "Invalid review request"));
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail(ErrorCode.UNAUTHORIZED, "Unauthorized"));
+        }
     }
 
     @GetMapping("/cards/due")
