@@ -1,0 +1,27 @@
+import 'package:flutter/material.dart';
+
+import 'app_router.dart';
+import 'app_theme.dart';
+
+class StudyForReadApp extends StatelessWidget {
+  const StudyForReadApp({
+    super.key,
+    this.isSignedIn = false,
+    this.initialLocation = '/',
+  });
+
+  final bool isSignedIn;
+  final String initialLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Study For Read',
+      theme: AppTheme.light(),
+      routerConfig: createAppRouter(
+        isSignedIn: isSignedIn,
+        initialLocation: initialLocation,
+      ),
+    );
+  }
+}
