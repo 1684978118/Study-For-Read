@@ -1,0 +1,20 @@
+create table study_daily_stats (
+    id uuid not null,
+    user_id uuid not null,
+    stat_date date not null,
+    reading_minutes integer not null default 0,
+    lookup_count integer not null default 0,
+    paragraph_translation_count integer not null default 0,
+    cards_created integer not null default 0,
+    cards_reviewed integer not null default 0,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    constraint study_daily_stats_pkey primary key (id),
+    constraint study_daily_stats_user_id_fkey foreign key (user_id) references users (id) on delete cascade,
+    constraint study_daily_stats_user_id_stat_date_unique unique (user_id, stat_date),
+    constraint study_daily_stats_reading_minutes_check check (reading_minutes >= 0),
+    constraint study_daily_stats_lookup_count_check check (lookup_count >= 0),
+    constraint study_daily_stats_paragraph_translation_count_check check (paragraph_translation_count >= 0),
+    constraint study_daily_stats_cards_created_check check (cards_created >= 0),
+    constraint study_daily_stats_cards_reviewed_check check (cards_reviewed >= 0)
+);
