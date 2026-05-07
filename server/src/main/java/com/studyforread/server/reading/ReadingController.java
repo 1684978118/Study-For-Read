@@ -2,6 +2,7 @@ package com.studyforread.server.reading;
 
 import com.studyforread.server.api.ApiResponse;
 import com.studyforread.server.api.ErrorCode;
+import com.studyforread.server.reading.dto.BookListResponse;
 import com.studyforread.server.reading.dto.BookMetadataRequest;
 import com.studyforread.server.reading.dto.BookResponse;
 import com.studyforread.server.reading.dto.ReadingProgressRequest;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -55,6 +57,12 @@ public class ReadingController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.fail(ErrorCode.UNAUTHORIZED, "Unauthorized"));
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<BookListResponse>> listBooks(Authentication authentication) {
+        var userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.ok(readingService.listBooks(userId)));
     }
 
     @PatchMapping("/{bookFingerprint}/progress")

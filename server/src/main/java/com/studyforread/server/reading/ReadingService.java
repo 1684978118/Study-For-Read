@@ -1,12 +1,14 @@
 package com.studyforread.server.reading;
 
 import com.studyforread.server.reading.dto.BookMetadataRequest;
+import com.studyforread.server.reading.dto.BookListResponse;
 import com.studyforread.server.reading.dto.BookResponse;
 import com.studyforread.server.reading.dto.ReadingProgressRequest;
 import com.studyforread.server.reading.dto.ReadingProgressResponse;
 import com.studyforread.server.user.UserAccountRepository;
 import jakarta.persistence.EntityManager;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -63,6 +65,19 @@ public class ReadingService {
         updateExistingProgress(book, request);
         var updatedBook = userBookRepository.findById(book.getId()).orElseThrow();
         return toProgressResponse(updatedBook);
+    }
+
+    @Transactional(readOnly = true)
+    public BookListResponse listBooks(UUID userId) {
+        var userBookRepository = required(userBookRepositoryProvider);
+        var items = userBookRepository.findByUserIdOrderByLastReadAtDesc(userId).stream()
+                .sorted(Comparator
+                        .comparing(UserBook::getLastReadAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(UserBook::getCreatedAt, Comparator.reverseOrder()))
+                .map(this::toResponse)
+                .toList();
+
+        return new BookListResponse(items);
     }
 
     private UserBook updateExistingBook(UserBook book, BookMetadataRequest request, BookFileType fileType) {
