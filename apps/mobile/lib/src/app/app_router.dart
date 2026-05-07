@@ -13,17 +13,20 @@ GoRouter createAppRouter({
   required bool isSignedIn,
   String initialLocation = '/',
 }) {
+  final authState = ValueNotifier<bool>(isSignedIn);
+
   return GoRouter(
     initialLocation: initialLocation,
+    refreshListenable: authState,
     redirect: (context, state) {
       final path = state.uri.path;
       final isAuthRoute = path == '/sign-in' || path == '/register';
 
-      if (!isSignedIn && !isAuthRoute) {
+      if (!authState.value && !isAuthRoute) {
         return '/sign-in';
       }
 
-      if (isSignedIn && (path == '/' || path == '/sign-in')) {
+      if (authState.value && (path == '/' || path == '/sign-in')) {
         return '/library';
       }
 
@@ -32,15 +35,20 @@ GoRouter createAppRouter({
     routes: [
       GoRoute(
         path: '/',
-        redirect: (context, state) => isSignedIn ? '/library' : '/sign-in',
+        redirect: (context, state) =>
+            authState.value ? '/library' : '/sign-in',
       ),
       GoRoute(
         path: '/sign-in',
-        builder: (context, state) => const SignInScreen(),
+        builder: (context, state) => SignInScreen(
+          onAuthenticated: () => authState.value = true,
+        ),
       ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) => RegisterScreen(
+          onAuthenticated: () => authState.value = true,
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => _HomeShell(
