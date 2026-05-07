@@ -2,6 +2,8 @@ package com.studyforread.server.reading;
 
 import com.studyforread.server.reading.dto.BookMetadataRequest;
 import com.studyforread.server.reading.dto.BookResponse;
+import com.studyforread.server.reading.dto.ReadingProgressRequest;
+import com.studyforread.server.reading.dto.ReadingProgressResponse;
 import com.studyforread.server.user.UserAccountRepository;
 import jakarta.persistence.EntityManager;
 import java.time.OffsetDateTime;
@@ -52,6 +54,17 @@ public class ReadingService {
         return toResponse(book);
     }
 
+    @Transactional
+    public ReadingProgressResponse updateProgress(UUID userId, String bookFingerprint, ReadingProgressRequest request) {
+        var userBookRepository = required(userBookRepositoryProvider);
+        var book = userBookRepository.findByUserIdAndBookFingerprint(userId, bookFingerprint)
+                .orElseThrow(BookNotFoundException::new);
+
+        updateExistingProgress(book, request);
+        var updatedBook = userBookRepository.findById(book.getId()).orElseThrow();
+        return toProgressResponse(updatedBook);
+    }
+
     private UserBook updateExistingBook(UserBook book, BookMetadataRequest request, BookFileType fileType) {
         var entityManager = required(entityManagerProvider);
         var userBookRepository = required(userBookRepositoryProvider);
@@ -81,6 +94,28 @@ public class ReadingService {
         return userBookRepository.findById(book.getId()).orElseThrow();
     }
 
+    private void updateExistingProgress(UserBook book, ReadingProgressRequest request) {
+        var entityManager = required(entityManagerProvider);
+        entityManager.createQuery("""
+                        update UserBook book
+                        set book.currentChapterIndex = :currentChapterIndex,
+                            book.currentParagraphIndex = :currentParagraphIndex,
+                            book.currentCharOffset = :currentCharOffset,
+                            book.lastReadAt = :lastReadAt,
+                            book.updatedAt = :updatedAt
+                        where book.id = :id
+                        """)
+                .setParameter("currentChapterIndex", request.currentChapterIndex())
+                .setParameter("currentParagraphIndex", request.currentParagraphIndex())
+                .setParameter("currentCharOffset", request.currentCharOffset())
+                .setParameter("lastReadAt", request.lastReadAt())
+                .setParameter("updatedAt", OffsetDateTime.now())
+                .setParameter("id", book.getId())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+    }
+
     private <T> T required(ObjectProvider<T> provider) {
         return provider.getIfAvailable(() -> {
             throw new IllegalStateException("Reading persistence is not available");
@@ -103,6 +138,18 @@ public class ReadingService {
                 book.getLastReadAt());
     }
 
+    private ReadingProgressResponse toProgressResponse(UserBook book) {
+        return new ReadingProgressResponse(
+                book.getBookFingerprint(),
+                book.getCurrentChapterIndex(),
+                book.getCurrentParagraphIndex(),
+                book.getCurrentCharOffset(),
+                book.getLastReadAt());
+    }
+
     public static class CurrentUserNotFoundException extends RuntimeException {
+    }
+
+    public static class BookNotFoundException extends RuntimeException {
     }
 }

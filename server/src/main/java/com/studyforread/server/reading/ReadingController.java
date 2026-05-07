@@ -4,6 +4,10 @@ import com.studyforread.server.api.ApiResponse;
 import com.studyforread.server.api.ErrorCode;
 import com.studyforread.server.reading.dto.BookMetadataRequest;
 import com.studyforread.server.reading.dto.BookResponse;
+import com.studyforread.server.reading.dto.ReadingProgressRequest;
+import com.studyforread.server.reading.dto.ReadingProgressResponse;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -11,6 +15,7 @@ import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,6 +57,24 @@ public class ReadingController {
         }
     }
 
+    @PatchMapping("/{bookFingerprint}/progress")
+    public ResponseEntity<ApiResponse<ReadingProgressResponse>> updateProgress(
+            @PathVariable String bookFingerprint,
+            @RequestBody Map<String, Object> requestBody,
+            Authentication authentication) {
+        try {
+            var userId = UUID.fromString(authentication.getName());
+            var request = parseAndValidateProgress(bookFingerprint, requestBody);
+            return ResponseEntity.ok(ApiResponse.ok(readingService.updateProgress(userId, bookFingerprint, request)));
+        } catch (InvalidBookProgressException | IllegalArgumentException | DateTimeParseException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.fail(ErrorCode.BOOK_PROGRESS_INVALID, "Invalid book progress"));
+        } catch (ReadingService.BookNotFoundException exception) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.fail(ErrorCode.NOT_FOUND, "Not found"));
+        }
+    }
+
     private BookMetadataRequest parseAndValidate(String bookFingerprint, Map<String, Object> requestBody) {
         if (!BOOK_FINGERPRINT_PATTERN.matcher(bookFingerprint).matches()
                 || requestBody == null
@@ -87,6 +110,29 @@ public class ReadingController {
                 chapterCount);
     }
 
+    private ReadingProgressRequest parseAndValidateProgress(String bookFingerprint, Map<String, Object> requestBody) {
+        if (!BOOK_FINGERPRINT_PATTERN.matcher(bookFingerprint).matches()
+                || requestBody == null
+                || hasForbiddenFields(requestBody)) {
+            throw new InvalidBookProgressException();
+        }
+
+        var currentChapterIndex = requiredInt(requestBody, "currentChapterIndex");
+        var currentParagraphIndex = requiredInt(requestBody, "currentParagraphIndex");
+        var currentCharOffset = requiredInt(requestBody, "currentCharOffset");
+        var lastReadAt = requiredTimestamp(requestBody, "lastReadAt");
+
+        if (currentChapterIndex < 0 || currentParagraphIndex < 0 || currentCharOffset < 0) {
+            throw new InvalidBookProgressException();
+        }
+
+        return new ReadingProgressRequest(
+                currentChapterIndex,
+                currentParagraphIndex,
+                currentCharOffset,
+                lastReadAt);
+    }
+
     private boolean hasForbiddenFields(Map<String, Object> requestBody) {
         for (var fieldName : FORBIDDEN_FIELDS) {
             if (requestBody.containsKey(fieldName)) {
@@ -116,6 +162,25 @@ public class ReadingController {
         return trimmed.isBlank() ? null : trimmed;
     }
 
+    private int requiredInt(Map<String, Object> requestBody, String fieldName) {
+        var field = requestBody.get(fieldName);
+        if (!(field instanceof Number value)) {
+            throw new InvalidBookProgressException();
+        }
+        return value.intValue();
+    }
+
+    private OffsetDateTime requiredTimestamp(Map<String, Object> requestBody, String fieldName) {
+        var field = requestBody.get(fieldName);
+        if (!(field instanceof String value) || value.isBlank()) {
+            throw new InvalidBookProgressException();
+        }
+        return OffsetDateTime.parse(value);
+    }
+
     private static class InvalidBookMetadataException extends RuntimeException {
+    }
+
+    private static class InvalidBookProgressException extends RuntimeException {
     }
 }
