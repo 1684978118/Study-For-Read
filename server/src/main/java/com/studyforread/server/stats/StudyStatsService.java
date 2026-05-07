@@ -2,6 +2,7 @@ package com.studyforread.server.stats;
 
 import com.studyforread.server.stats.dto.AddDailyStatsRequest;
 import com.studyforread.server.stats.dto.DailyStatsResponse;
+import com.studyforread.server.stats.dto.StudySummaryResponse;
 import com.studyforread.server.user.UserAccountRepository;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -52,6 +53,36 @@ public class StudyStatsService {
                 OffsetDateTime.now());
         var updated = studyDailyStatRepository.findById(stat.getId()).orElseThrow();
         return toResponse(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public StudySummaryResponse getSummary(UUID userId) {
+        var studyDailyStatRepository = required(studyDailyStatRepositoryProvider);
+        var userAccountRepository = required(userAccountRepositoryProvider);
+        if (!userAccountRepository.existsById(userId)) {
+            throw new CurrentUserNotFoundException();
+        }
+
+        long readingMinutes = 0;
+        long lookupCount = 0;
+        long paragraphTranslationCount = 0;
+        long cardsCreated = 0;
+        long cardsReviewed = 0;
+
+        for (var stat : studyDailyStatRepository.findByUserIdOrderByStatDateDesc(userId)) {
+            readingMinutes += stat.getReadingMinutes();
+            lookupCount += stat.getLookupCount();
+            paragraphTranslationCount += stat.getParagraphTranslationCount();
+            cardsCreated += stat.getCardsCreated();
+            cardsReviewed += stat.getCardsReviewed();
+        }
+
+        return new StudySummaryResponse(
+                readingMinutes,
+                lookupCount,
+                paragraphTranslationCount,
+                cardsCreated,
+                cardsReviewed);
     }
 
     private void guardNoOverflow(StudyDailyStat stat, AddDailyStatsRequest request) {

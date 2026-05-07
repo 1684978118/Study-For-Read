@@ -4,6 +4,7 @@ import com.studyforread.server.api.ApiResponse;
 import com.studyforread.server.api.ErrorCode;
 import com.studyforread.server.stats.dto.AddDailyStatsRequest;
 import com.studyforread.server.stats.dto.DailyStatsResponse;
+import com.studyforread.server.stats.dto.StudySummaryResponse;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,6 +52,17 @@ public class StudyStatsController {
                  | DateTimeParseException exception) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.fail(ErrorCode.VALIDATION_ERROR, "Invalid daily stats"));
+        } catch (StudyStatsService.CurrentUserNotFoundException | NullPointerException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail(ErrorCode.UNAUTHORIZED, "Unauthorized"));
+        }
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<StudySummaryResponse>> getSummary(Authentication authentication) {
+        try {
+            var userId = UUID.fromString(authentication.getName());
+            return ResponseEntity.ok(ApiResponse.ok(studyStatsService.getSummary(userId)));
         } catch (StudyStatsService.CurrentUserNotFoundException | NullPointerException exception) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.fail(ErrorCode.UNAUTHORIZED, "Unauthorized"));
