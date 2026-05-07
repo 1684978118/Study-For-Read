@@ -4,8 +4,11 @@ import com.studyforread.server.api.ErrorCode;
 import com.studyforread.server.study.dto.LexemeLookupResponse;
 import com.studyforread.server.study.dto.LookupRequest;
 import com.studyforread.server.study.dto.LookupResponse;
+import com.studyforread.server.study.dto.TranslateParagraphRequest;
+import com.studyforread.server.study.dto.TranslateParagraphResponse;
 import com.studyforread.server.study.provider.LocalFallbackStudyProvider;
 import com.studyforread.server.study.provider.LookupProviderResult;
+import com.studyforread.server.study.provider.ParagraphTranslationResult;
 import com.studyforread.server.study.provider.StudyProviderRouter;
 import com.studyforread.server.user.UserAccount;
 import com.studyforread.server.user.UserAccountRepository;
@@ -29,6 +32,7 @@ public class StudyService {
     private static final String PUBLIC_LEXEME_PROVIDER = "public_lexeme";
     private static final String SUPPORTED_SOURCE_LANG = "ja";
     private static final String SUPPORTED_TARGET_LANG = "zh-CN";
+    private static final int FIRST_RELEASE_PARAGRAPH_TEXT_LIMIT = 2000;
 
     private final ObjectProvider<UserAccountRepository> userAccountRepositoryProvider;
     private final ObjectProvider<LexemeRepository> lexemeRepositoryProvider;
@@ -38,11 +42,13 @@ public class StudyService {
     public StudyService(
             ObjectProvider<UserAccountRepository> userAccountRepositoryProvider,
             ObjectProvider<LexemeRepository> lexemeRepositoryProvider,
-            ObjectProvider<TranslationEventRepository> translationEventRepositoryProvider) {
+            ObjectProvider<TranslationEventRepository> translationEventRepositoryProvider,
+            ObjectProvider<StudyProviderRouter> studyProviderRouterProvider) {
         this.userAccountRepositoryProvider = userAccountRepositoryProvider;
         this.lexemeRepositoryProvider = lexemeRepositoryProvider;
         this.translationEventRepositoryProvider = translationEventRepositoryProvider;
-        this.studyProviderRouter = new StudyProviderRouter(List.of(new LocalFallbackStudyProvider()));
+        this.studyProviderRouter = studyProviderRouterProvider.getIfAvailable(
+                () -> new StudyProviderRouter(List.of(new LocalFallbackStudyProvider())));
     }
 
     @Transactional(noRollbackFor = UnsupportedLanguagePairException.class)
@@ -57,6 +63,7 @@ public class StudyService {
         if (!SUPPORTED_SOURCE_LANG.equals(sourceLang) || !SUPPORTED_TARGET_LANG.equals(targetLang)) {
             saveTranslationEvent(
                     user,
+                    TranslationRequestType.WORD_LOOKUP,
                     sourceLang,
                     targetLang,
                     null,
@@ -79,6 +86,7 @@ public class StudyService {
         if (publicLexeme.isPresent()) {
             saveTranslationEvent(
                     user,
+                    TranslationRequestType.WORD_LOOKUP,
                     sourceLang,
                     targetLang,
                     PUBLIC_LEXEME_PROVIDER,
@@ -92,6 +100,7 @@ public class StudyService {
         var providerResult = studyProviderRouter.lookup(text, sourceLang, targetLang, request.context());
         saveTranslationEvent(
                 user,
+                TranslationRequestType.WORD_LOOKUP,
                 sourceLang,
                 targetLang,
                 providerResult.providerName(),
@@ -100,6 +109,87 @@ public class StudyService {
                 true,
                 null);
         return toResponse(providerResult);
+    }
+
+    @Transactional(noRollbackFor = {
+            UnsupportedLanguagePairException.class,
+            TextTooLongException.class,
+            ProviderUnavailableException.class
+    })
+    public TranslateParagraphResponse translateParagraph(UUID userId, TranslateParagraphRequest request) {
+        var user = userAccountRepository().findById(userId).orElseThrow(CurrentUserNotFoundException::new);
+        var text = request.text().trim();
+        var sourceLang = request.sourceLang().trim();
+        var targetLang = request.targetLang().trim();
+        var sourceTextHash = sha256Hex(text);
+        var sourceTextLength = text.length();
+
+        if (!SUPPORTED_SOURCE_LANG.equals(sourceLang) || !SUPPORTED_TARGET_LANG.equals(targetLang)) {
+            saveTranslationEvent(
+                    user,
+                    TranslationRequestType.PARAGRAPH_TRANSLATION,
+                    sourceLang,
+                    targetLang,
+                    null,
+                    sourceTextHash,
+                    sourceTextLength,
+                    false,
+                    ErrorCode.TRANSLATION_UNSUPPORTED_LANGUAGE_PAIR.name());
+            throw new UnsupportedLanguagePairException();
+        }
+
+        if (sourceTextLength > FIRST_RELEASE_PARAGRAPH_TEXT_LIMIT) {
+            saveTranslationEvent(
+                    user,
+                    TranslationRequestType.PARAGRAPH_TRANSLATION,
+                    sourceLang,
+                    targetLang,
+                    null,
+                    sourceTextHash,
+                    sourceTextLength,
+                    false,
+                    ErrorCode.TRANSLATION_TEXT_TOO_LONG.name());
+            throw new TextTooLongException();
+        }
+
+        ParagraphTranslationResult providerResult;
+        try {
+            providerResult = studyProviderRouter.translateParagraph(text, sourceLang, targetLang);
+            if (providerResult == null
+                    || providerResult.providerName() == null
+                    || providerResult.providerName().isBlank()
+                    || providerResult.translatedText() == null) {
+                throw new IllegalStateException("Invalid paragraph translation provider result");
+            }
+        } catch (RuntimeException exception) {
+            saveTranslationEvent(
+                    user,
+                    TranslationRequestType.PARAGRAPH_TRANSLATION,
+                    sourceLang,
+                    targetLang,
+                    null,
+                    sourceTextHash,
+                    sourceTextLength,
+                    false,
+                    ErrorCode.TRANSLATION_PROVIDER_UNAVAILABLE.name());
+            throw new ProviderUnavailableException();
+        }
+
+        saveTranslationEvent(
+                user,
+                TranslationRequestType.PARAGRAPH_TRANSLATION,
+                sourceLang,
+                targetLang,
+                providerResult.providerName(),
+                sourceTextHash,
+                sourceTextLength,
+                true,
+                null);
+        return new TranslateParagraphResponse(
+                providerResult.translatedText(),
+                providerResult.providerName(),
+                providerResult.cached(),
+                providerResult.message());
     }
 
     private LookupResponse toResponse(LookupProviderResult providerResult) {
@@ -135,6 +225,7 @@ public class StudyService {
 
     private void saveTranslationEvent(
             UserAccount user,
+            TranslationRequestType requestType,
             String sourceLang,
             String targetLang,
             String provider,
@@ -144,7 +235,7 @@ public class StudyService {
             String errorCode) {
         translationEventRepository().saveAndFlush(new TranslationEvent(
                 user,
-                TranslationRequestType.WORD_LOOKUP,
+                requestType,
                 sourceLang,
                 targetLang,
                 provider,
@@ -191,5 +282,11 @@ public class StudyService {
     }
 
     public static class UnsupportedLanguagePairException extends RuntimeException {
+    }
+
+    public static class TextTooLongException extends RuntimeException {
+    }
+
+    public static class ProviderUnavailableException extends RuntimeException {
     }
 }
