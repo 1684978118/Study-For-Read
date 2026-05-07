@@ -6,10 +6,36 @@ import java.util.UUID;
 public record VocabularyCardResponse(
         UUID id,
         String cardType,
+        String surface,
+        String reading,
+        String definition,
         LexemeSummaryResponse lexeme,
         String privateSurface,
         String privateDefinition,
         String reviewStatus,
         int reviewCount,
         OffsetDateTime nextReviewAt) {
+
+    public VocabularyCardResponse(
+            UUID id,
+            String cardType,
+            LexemeSummaryResponse lexeme,
+            String privateSurface,
+            String privateDefinition,
+            String reviewStatus,
+            int reviewCount,
+            OffsetDateTime nextReviewAt) {
+        this(
+                id,
+                cardType,
+                lexeme == null ? privateSurface : lexeme.surface(),
+                lexeme == null ? null : lexeme.reading(),
+                lexeme == null ? privateDefinition : lexeme.definition(),
+                lexeme,
+                privateSurface,
+                privateDefinition,
+                reviewStatus,
+                reviewCount,
+                nextReviewAt);
+    }
 }

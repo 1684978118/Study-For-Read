@@ -2,8 +2,10 @@ package com.studyforread.server.vocabulary;
 
 import com.studyforread.server.user.UserAccountRepository;
 import com.studyforread.server.vocabulary.dto.CreateVocabularyCardRequest;
+import com.studyforread.server.vocabulary.dto.DueVocabularyCardsResponse;
 import com.studyforread.server.vocabulary.dto.LexemeSummaryResponse;
 import com.studyforread.server.vocabulary.dto.VocabularyCardResponse;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -66,6 +68,18 @@ public class VocabularyService {
                 null,
                 null));
         return toResponse(card);
+    }
+
+    @Transactional(readOnly = true)
+    public DueVocabularyCardsResponse listDueCards(UUID userId) {
+        var userAccountRepository = required(userAccountRepositoryProvider);
+        var userWordCardRepository = required(userWordCardRepositoryProvider);
+        userAccountRepository.findById(userId).orElseThrow(CurrentUserNotFoundException::new);
+
+        var items = userWordCardRepository.findDueCardsByUserId(userId, OffsetDateTime.now()).stream()
+                .map(this::toResponse)
+                .toList();
+        return new DueVocabularyCardsResponse(items);
     }
 
     private <T> T required(ObjectProvider<T> provider) {

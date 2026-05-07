@@ -3,6 +3,7 @@ package com.studyforread.server.vocabulary;
 import com.studyforread.server.api.ApiResponse;
 import com.studyforread.server.api.ErrorCode;
 import com.studyforread.server.vocabulary.dto.CreateVocabularyCardRequest;
+import com.studyforread.server.vocabulary.dto.DueVocabularyCardsResponse;
 import com.studyforread.server.vocabulary.dto.VocabularyCardResponse;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +27,17 @@ public class VocabularyController {
 
     public VocabularyController(VocabularyService vocabularyService) {
         this.vocabularyService = vocabularyService;
+    }
+
+    @GetMapping("/cards/due")
+    public ResponseEntity<ApiResponse<DueVocabularyCardsResponse>> listDueCards(Authentication authentication) {
+        try {
+            var userId = UUID.fromString(authentication.getName());
+            return ResponseEntity.ok(ApiResponse.ok(vocabularyService.listDueCards(userId)));
+        } catch (VocabularyService.CurrentUserNotFoundException | IllegalArgumentException | NullPointerException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.fail(ErrorCode.UNAUTHORIZED, "Unauthorized"));
+        }
     }
 
     @PostMapping("/cards")
