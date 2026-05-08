@@ -87,8 +87,7 @@ class LocalWordCardRepository {
       'local_word_cards',
       where:
           'owner_user_id = ? AND '
-          "(review_status = 'new' OR "
-          '(next_review_at IS NOT NULL AND next_review_at <= ?))',
+          '(next_review_at IS NULL OR next_review_at <= ?)',
       whereArgs: [ownerUserId, dueAt.toUtc().toIso8601String()],
       orderBy: 'next_review_at ASC, created_at ASC',
     );
