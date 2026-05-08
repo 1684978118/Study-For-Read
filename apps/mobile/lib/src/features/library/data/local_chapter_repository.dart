@@ -5,10 +5,18 @@ import '../domain/local_chapter.dart';
 class LocalChapterRepository {
   LocalChapterRepository(this._db);
 
-  final Database _db;
+  final DatabaseExecutor _db;
 
   Future<int> insert(LocalChapter chapter) {
     return _db.insert('local_chapters', chapter.toMap());
+  }
+
+  Future<int> deleteByBookId(String bookId) {
+    return _db.delete(
+      'local_chapters',
+      where: 'book_id = ?',
+      whereArgs: [bookId],
+    );
   }
 
   Future<LocalChapter?> findByBookIdAndChapterIndex({

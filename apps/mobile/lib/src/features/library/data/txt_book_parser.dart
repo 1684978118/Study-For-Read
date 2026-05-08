@@ -139,10 +139,7 @@ class TxtBookParser {
 }
 
 class _ChapterDraft {
-  _ChapterDraft({
-    required this.title,
-    required this.lines,
-  });
+  _ChapterDraft({required this.title, required this.lines});
 
   final String title;
   final List<String> lines;

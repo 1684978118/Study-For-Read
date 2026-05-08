@@ -7,7 +7,7 @@ import '../domain/pending_sync_event.dart';
 class PendingSyncEventRepository {
   PendingSyncEventRepository(this._db);
 
-  final Database _db;
+  final DatabaseExecutor _db;
 
   Future<int> insert(PendingSyncEvent event) {
     _validate(event);

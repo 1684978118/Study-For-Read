@@ -11,8 +11,8 @@ class BookFileStorageService {
   BookFileStorageService({
     Directory? privateRootDirectory,
     BookFingerprintService fingerprintService = const BookFingerprintService(),
-  })  : _privateRootDirectory = privateRootDirectory,
-        _fingerprintService = fingerprintService;
+  }) : _privateRootDirectory = privateRootDirectory,
+       _fingerprintService = fingerprintService;
 
   final Directory? _privateRootDirectory;
   final BookFingerprintService _fingerprintService;
