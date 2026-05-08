@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:sqflite/sqflite.dart';
 
 import '../domain/local_study_daily_stat.dart';
+import '../domain/study_stats_summary.dart';
 
 class LocalStudyStatsRepository {
   LocalStudyStatsRepository(this._db);
@@ -122,4 +123,64 @@ class LocalStudyStatsRepository {
         '${value.substring(16, 20)}-'
         '${value.substring(20)}';
   }
+}
+
+extension LocalStudyStatsRepositorySummary on LocalStudyStatsRepository {
+  Future<StudyStatsSummary> summaryForToday({
+    required String ownerUserId,
+    required DateTime today,
+  }) async {
+    final stat = await findByOwnerUserIdAndStatDate(
+      ownerUserId: ownerUserId,
+      statDate: today,
+    );
+    if (stat == null) {
+      return StudyStatsSummary.zero;
+    }
+    return _summaryFrom(stat);
+  }
+
+  Future<StudyStatsSummary> summaryForLast7Days({
+    required String ownerUserId,
+    required DateTime today,
+  }) async {
+    final end = DateTime.utc(today.year, today.month, today.day);
+    final start = end.subtract(const Duration(days: 6));
+    final stats = await findByOwnerUserId(ownerUserId);
+    return _sum(
+      stats.where((stat) {
+        final date = DateTime.utc(
+          stat.statDate.year,
+          stat.statDate.month,
+          stat.statDate.day,
+        );
+        return !date.isBefore(start) && !date.isAfter(end);
+      }),
+    );
+  }
+
+  Future<StudyStatsSummary> summaryForAllTime({
+    required String ownerUserId,
+  }) async {
+    final stats = await findByOwnerUserId(ownerUserId);
+    return _sum(stats);
+  }
+}
+
+StudyStatsSummary _sum(Iterable<LocalStudyDailyStat> stats) {
+  var summary = StudyStatsSummary.zero;
+  for (final stat in stats) {
+    summary += _summaryFrom(stat);
+  }
+  return summary;
+}
+
+StudyStatsSummary _summaryFrom(LocalStudyDailyStat stat) {
+  return StudyStatsSummary(
+    readingMinutes: stat.readingMinutes,
+    lookupCount: stat.lookupCount,
+    paragraphTranslationCount: stat.paragraphTranslationCount,
+    cardsCreated: stat.cardsCreated,
+    cardsReviewed: stat.cardsReviewed,
+  );
 }

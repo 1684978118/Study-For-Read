@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -10,6 +11,8 @@ import '../../library/domain/local_chapter.dart';
 import '../../library/domain/local_reading_position.dart';
 import '../../study/presentation/paragraph_translation_controller.dart';
 import '../../study/presentation/lookup_controller.dart';
+import '../../stats/data/local_study_stats_repository.dart';
+import '../../stats/data/study_stats_tracker.dart';
 import '../data/local_reading_position_repository.dart';
 
 class ReaderController extends ChangeNotifier {
@@ -20,12 +23,18 @@ class ReaderController extends ChangeNotifier {
     required LocalReadingPositionRepository positionRepository,
     LookupController? lookupController,
     ParagraphTranslationController? paragraphTranslationController,
+    StudyStatsTracker? statsTracker,
+    LocalStudyStatsRepository? statsRepository,
+    DateTime Function()? now,
   }) : _bookId = bookId,
        _bookRepository = bookRepository,
        _chapterRepository = chapterRepository,
        _positionRepository = positionRepository,
        _lookupController = lookupController,
-       _paragraphTranslationController = paragraphTranslationController;
+       _paragraphTranslationController = paragraphTranslationController,
+       _statsTracker = statsTracker,
+       _statsRepository = statsRepository,
+       _now = now ?? DateTime.now;
 
   static const double minFontSize = 16;
   static const double maxFontSize = 28;
@@ -37,6 +46,9 @@ class ReaderController extends ChangeNotifier {
   final LocalReadingPositionRepository _positionRepository;
   LookupController? _lookupController;
   ParagraphTranslationController? _paragraphTranslationController;
+  StudyStatsTracker? _statsTracker;
+  final LocalStudyStatsRepository? _statsRepository;
+  final DateTime Function() _now;
 
   bool _isLoading = false;
   bool _notFound = false;
@@ -46,6 +58,7 @@ class ReaderController extends ChangeNotifier {
   double _fontSize = defaultFontSize;
   String? _positionId;
   DateTime? _positionCreatedAt;
+  DateTime? _readingSessionStartedAt;
 
   bool get isLoading => _isLoading;
   bool get notFound => _notFound;
@@ -70,6 +83,7 @@ class ReaderController extends ChangeNotifier {
       bookRepository: LocalBookRepository(database),
       chapterRepository: LocalChapterRepository(database),
       positionRepository: LocalReadingPositionRepository(database),
+      statsRepository: LocalStudyStatsRepository(database),
     );
   }
 
@@ -97,6 +111,13 @@ class ReaderController extends ChangeNotifier {
     _positionCreatedAt = position?.createdAt;
     _book = book;
     _chapters = chapters;
+    _statsTracker ??= _statsRepository == null
+        ? null
+        : StudyStatsTracker(
+            ownerUserId: book.ownerUserId,
+            repository: _statsRepository,
+          );
+    _readingSessionStartedAt = _now();
     _currentChapterIndex = (position?.currentChapterIndex ?? 0).clamp(
       0,
       chapters.length - 1,
@@ -159,6 +180,18 @@ class ReaderController extends ChangeNotifier {
     );
   }
 
+  Future<void> endReadingSession() async {
+    final startedAt = _readingSessionStartedAt;
+    final tracker = _statsTracker;
+    if (startedAt == null || tracker == null) {
+      return;
+    }
+
+    final endedAt = _now();
+    _readingSessionStartedAt = endedAt;
+    await tracker.recordReadingSession(endedAt.difference(startedAt));
+  }
+
   Future<LookupController> ensureLookupController() async {
     final existing = _lookupController;
     if (existing != null) {
@@ -205,6 +238,12 @@ class ReaderController extends ChangeNotifier {
     _notFound = true;
     _isLoading = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unawaited(endReadingSession());
+    super.dispose();
   }
 
   String _uuidV4() {
