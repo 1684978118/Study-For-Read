@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
+import 'review_controller.dart';
 import 'vocabulary_card_tile.dart';
 import 'vocabulary_controller.dart';
 
 class VocabularyScreen extends StatefulWidget {
-  const VocabularyScreen({super.key, VocabularyController? controller})
-    : _controller = controller;
+  const VocabularyScreen({
+    super.key,
+    VocabularyController? controller,
+    ReviewController? reviewController,
+  }) : _controller = controller,
+       _reviewController = reviewController;
 
   final VocabularyController? _controller;
+  final ReviewController? _reviewController;
 
   @override
   State<VocabularyScreen> createState() => _VocabularyScreenState();
@@ -15,7 +21,8 @@ class VocabularyScreen extends StatefulWidget {
 
 class _VocabularyScreenState extends State<VocabularyScreen> {
   VocabularyController? _controller;
-  Future<VocabularyController>? _controllerFuture;
+  ReviewController? _reviewController;
+  Future<_VocabularyControllers>? _controllersFuture;
   bool _ownsController = false;
 
   @override
@@ -24,10 +31,11 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     final controller = widget._controller;
     if (controller != null) {
       _controller = controller;
+      _reviewController = widget._reviewController;
       controller.load();
     } else {
       _ownsController = true;
-      _controllerFuture = VocabularyController.local();
+      _controllersFuture = _VocabularyControllers.local();
     }
   }
 
@@ -35,6 +43,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
   void dispose() {
     if (_ownsController) {
       _controller?.dispose();
+      _reviewController?.dispose();
     }
     super.dispose();
   }
@@ -43,16 +52,23 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
   Widget build(BuildContext context) {
     final controller = _controller;
     if (controller != null) {
-      return _VocabularyContent(controller: controller);
+      return _VocabularyContent(
+        controller: controller,
+        reviewController: _reviewController,
+      );
     }
 
-    return FutureBuilder<VocabularyController>(
-      future: _controllerFuture,
+    return FutureBuilder<_VocabularyControllers>(
+      future: _controllersFuture,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          _controller = snapshot.requireData;
+          _controller = snapshot.requireData.vocabularyController;
+          _reviewController = snapshot.requireData.reviewController;
           _controller!.load();
-          return _VocabularyContent(controller: _controller!);
+          return _VocabularyContent(
+            controller: _controller!,
+            reviewController: _reviewController,
+          );
         }
 
         return const Scaffold(
@@ -65,9 +81,13 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
 }
 
 class _VocabularyContent extends StatelessWidget {
-  const _VocabularyContent({required this.controller});
+  const _VocabularyContent({
+    required this.controller,
+    required this.reviewController,
+  });
 
   final VocabularyController controller;
+  final ReviewController? reviewController;
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +110,8 @@ class _VocabularyContent extends StatelessWidget {
                   emptyBody: 'New and scheduled cards will appear here.',
                   errorMessage: controller.errorMessage,
                   onRefresh: controller.load,
+                  reviewController: reviewController,
+                  onReviewed: controller.load,
                 ),
                 _VocabularyList(
                   cards: controller.allCards,
@@ -97,6 +119,8 @@ class _VocabularyContent extends StatelessWidget {
                   emptyBody: 'Saved lookup cards will stay available offline.',
                   errorMessage: controller.errorMessage,
                   onRefresh: controller.load,
+                  reviewController: reviewController,
+                  onReviewed: controller.load,
                 ),
                 _VocabularyList(
                   cards: controller.privateSentenceCards,
@@ -104,6 +128,8 @@ class _VocabularyContent extends StatelessWidget {
                   emptyBody: 'Private sentence cards are shown only for you.',
                   errorMessage: controller.errorMessage,
                   onRefresh: controller.load,
+                  reviewController: reviewController,
+                  onReviewed: controller.load,
                 ),
               ],
             );
@@ -144,6 +170,8 @@ class _VocabularyList extends StatelessWidget {
     required this.emptyBody,
     required this.errorMessage,
     required this.onRefresh,
+    required this.reviewController,
+    required this.onReviewed,
   });
 
   final List<VocabularyCardView> cards;
@@ -151,6 +179,8 @@ class _VocabularyList extends StatelessWidget {
   final String emptyBody;
   final String? errorMessage;
   final Future<void> Function() onRefresh;
+  final ReviewController? reviewController;
+  final Future<void> Function() onReviewed;
 
   @override
   Widget build(BuildContext context) {
@@ -163,10 +193,27 @@ class _VocabularyList extends StatelessWidget {
           if (cards.isEmpty)
             _EmptyVocabularyState(title: emptyTitle, body: emptyBody)
           else
-            for (final card in cards) VocabularyCardTile(card: card),
+            for (final card in cards)
+              VocabularyCardTile(
+                card: card,
+                onKnown: reviewController == null
+                    ? null
+                    : (cardId) => _review(cardId: cardId, known: true),
+                onUnknown: reviewController == null
+                    ? null
+                    : (cardId) => _review(cardId: cardId, known: false),
+              ),
         ],
       ),
     );
+  }
+
+  Future<void> _review({
+    required String cardId,
+    required bool known,
+  }) async {
+    await reviewController!.reviewCard(cardId: cardId, known: known);
+    await onReviewed();
   }
 }
 
@@ -223,6 +270,25 @@ class _InlineError extends StatelessWidget {
         message,
         style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
+    );
+  }
+}
+
+class _VocabularyControllers {
+  const _VocabularyControllers({
+    required this.vocabularyController,
+    required this.reviewController,
+  });
+
+  final VocabularyController vocabularyController;
+  final ReviewController reviewController;
+
+  static Future<_VocabularyControllers> local() async {
+    final vocabularyController = await VocabularyController.local();
+    final reviewController = await ReviewController.local();
+    return _VocabularyControllers(
+      vocabularyController: vocabularyController,
+      reviewController: reviewController,
     );
   }
 }

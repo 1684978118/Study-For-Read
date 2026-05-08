@@ -87,6 +87,9 @@ class PendingSyncEventRepository {
       'sourcetextpreview',
       'translatedtext',
       'paragraphtext',
+      'fullchapter',
+      'fullbook',
+      'originalfilepath',
     };
     return forbidden.contains(normalized);
   }

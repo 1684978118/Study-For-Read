@@ -6,9 +6,13 @@ class VocabularyCardTile extends StatelessWidget {
   const VocabularyCardTile({
     super.key,
     required this.card,
+    this.onKnown,
+    this.onUnknown,
   });
 
   final VocabularyCardView card;
+  final Future<void> Function(String cardId)? onKnown;
+  final Future<void> Function(String cardId)? onUnknown;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +46,22 @@ class VocabularyCardTile extends StatelessWidget {
                 Text(_syncLabel(card.syncStatus)),
               ],
             ),
+            if (onKnown != null && onUnknown != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: () => onUnknown!(card.id),
+                    child: const Text('Unknown'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => onKnown!(card.id),
+                    child: const Text('Known'),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -53,7 +73,7 @@ class VocabularyCardTile extends StatelessWidget {
   }
 
   String _reviewLabel(String reviewStatus, int reviewCount) {
-    return '$reviewStatus · $reviewCount reviews';
+    return '$reviewStatus - $reviewCount reviews';
   }
 
   String _nextReviewLabel(DateTime? nextReviewAt) {
