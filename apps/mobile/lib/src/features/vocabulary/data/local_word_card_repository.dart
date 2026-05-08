@@ -145,3 +145,21 @@ class LocalWordCardRepository {
     return value == null || value.trim().isEmpty;
   }
 }
+
+Future<int> markLocalWordCardSyncedWithServerCardId(
+  LocalWordCardRepository repository, {
+  required LocalWordCard card,
+  required String serverCardId,
+  required DateTime updatedAt,
+}) {
+  return repository._db.update(
+    'local_word_cards',
+    {
+      'server_card_id': serverCardId,
+      'sync_status': 'synced',
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+    },
+    where: 'id = ?',
+    whereArgs: [card.id],
+  );
+}

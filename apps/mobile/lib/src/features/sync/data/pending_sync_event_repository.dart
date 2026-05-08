@@ -94,3 +94,37 @@ class PendingSyncEventRepository {
     return forbidden.contains(normalized);
   }
 }
+
+Future<void> markPendingSyncEventDone(
+  PendingSyncEventRepository repository,
+  PendingSyncEvent event,
+) async {
+  await repository._db.update(
+    'pending_sync_events',
+    {
+      'status': 'done',
+      'last_error_code': null,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    },
+    where: 'id = ?',
+    whereArgs: [event.id],
+  );
+}
+
+Future<void> markPendingSyncEventFailed(
+  PendingSyncEventRepository repository,
+  PendingSyncEvent event, {
+  required String errorCode,
+}) async {
+  await repository._db.update(
+    'pending_sync_events',
+    {
+      'status': 'failed',
+      'attempt_count': event.attemptCount + 1,
+      'last_error_code': errorCode,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    },
+    where: 'id = ?',
+    whereArgs: [event.id],
+  );
+}
