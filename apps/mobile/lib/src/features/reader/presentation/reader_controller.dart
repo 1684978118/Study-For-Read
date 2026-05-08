@@ -8,6 +8,7 @@ import '../../library/data/local_chapter_repository.dart';
 import '../../library/domain/local_book.dart';
 import '../../library/domain/local_chapter.dart';
 import '../../library/domain/local_reading_position.dart';
+import '../../study/presentation/lookup_controller.dart';
 import '../data/local_reading_position_repository.dart';
 
 class ReaderController extends ChangeNotifier {
@@ -16,10 +17,12 @@ class ReaderController extends ChangeNotifier {
     required LocalBookRepository bookRepository,
     required LocalChapterRepository chapterRepository,
     required LocalReadingPositionRepository positionRepository,
+    LookupController? lookupController,
   })  : _bookId = bookId,
         _bookRepository = bookRepository,
         _chapterRepository = chapterRepository,
-        _positionRepository = positionRepository;
+        _positionRepository = positionRepository,
+        _lookupController = lookupController;
 
   static const double minFontSize = 16;
   static const double maxFontSize = 28;
@@ -29,6 +32,7 @@ class ReaderController extends ChangeNotifier {
   final LocalBookRepository _bookRepository;
   final LocalChapterRepository _chapterRepository;
   final LocalReadingPositionRepository _positionRepository;
+  LookupController? _lookupController;
 
   bool _isLoading = false;
   bool _notFound = false;
@@ -50,6 +54,7 @@ class ReaderController extends ChangeNotifier {
   bool get canGoNext => _currentChapterIndex < _chapters.length - 1;
   String get progressLabel =>
       _chapters.isEmpty ? '0 / 0' : '${_currentChapterIndex + 1} / ${_chapters.length}';
+  LookupController? get lookupController => _lookupController;
 
   static Future<ReaderController> local(String bookId) async {
     final database = await MobileDatabase().open();
@@ -145,6 +150,24 @@ class ReaderController extends ChangeNotifier {
         updatedAt: now,
       ),
     );
+  }
+
+  Future<LookupController> ensureLookupController() async {
+    final existing = _lookupController;
+    if (existing != null) {
+      return existing;
+    }
+    final book = _book;
+    if (book == null) {
+      throw StateError('Cannot create lookup controller without a book');
+    }
+    final created = await LookupController.local(
+      ownerUserId: book.ownerUserId,
+      sourceLang: book.sourceLang,
+      targetLang: book.targetLang,
+    );
+    _lookupController = created;
+    return created;
   }
 
   void _markNotFound() {

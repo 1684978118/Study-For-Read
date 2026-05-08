@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../study/domain/reader_text_selection.dart';
+import '../../study/presentation/lookup_bottom_sheet.dart';
 import 'reader_controller.dart';
 import 'reading_text_view.dart';
 
@@ -122,6 +124,9 @@ class _ReaderContent extends StatelessWidget {
                     child: ReadingTextView(
                       text: chapter.content,
                       fontSize: controller.fontSize,
+                      onLookup: (selection) {
+                        _openLookup(context, controller, selection);
+                      },
                     ),
                   ),
                 ),
@@ -131,6 +136,26 @@ class _ReaderContent extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _openLookup(
+    BuildContext context,
+    ReaderController controller,
+    ReaderTextSelection selection,
+  ) async {
+    final lookupController = await controller.ensureLookupController();
+    if (!context.mounted) {
+      return;
+    }
+    await lookupController.lookup(selection);
+    if (!context.mounted) {
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => LookupBottomSheet(controller: lookupController),
     );
   }
 }
