@@ -30,6 +30,20 @@ class PendingSyncEventRepository {
     if (event.attemptCount < 0) {
       throw ArgumentError('attemptCount must be zero or positive');
     }
+    const allowedEventTypes = {
+      'book_metadata',
+      'reading_progress',
+      'word_card_create',
+      'word_card_review',
+      'daily_stats',
+    };
+    if (!allowedEventTypes.contains(event.eventType)) {
+      throw ArgumentError('Unsupported event_type');
+    }
+    const allowedStatuses = {'pending', 'in_progress', 'failed', 'done'};
+    if (!allowedStatuses.contains(event.status)) {
+      throw ArgumentError('Unsupported status');
+    }
     _rejectForbiddenPayloadFields(event.payloadJson);
   }
 
@@ -69,6 +83,8 @@ class PendingSyncEventRepository {
       'originalfile',
       'filepath',
       'rawtext',
+      'sourcetexthash',
+      'sourcetextpreview',
       'translatedtext',
       'paragraphtext',
     };

@@ -1,11 +1,24 @@
 import 'package:sqflite/sqflite.dart';
 
 class MobileDatabaseMigrations {
-  static const int version = 1;
+  static const int version = 2;
 
   static Future<void> create(Database db, int version) async {
     if (version >= 1) {
       await _createV1(db);
+    }
+    if (version >= 2) {
+      await _createV2(db);
+    }
+  }
+
+  static Future<void> upgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2 && newVersion >= 2) {
+      await _createV2(db);
     }
   }
 
@@ -86,6 +99,115 @@ class MobileDatabaseMigrations {
         last_error_code TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  static Future<void> _createV2(Database db) async {
+    await db.execute('''
+      CREATE TABLE local_lexeme_cache (
+        id TEXT PRIMARY KEY,
+        surface TEXT NOT NULL,
+        reading TEXT,
+        source_lang TEXT NOT NULL,
+        target_lang TEXT NOT NULL,
+        entry_type TEXT NOT NULL CHECK (entry_type IN ('word', 'phrase', 'idiom')),
+        part_of_speech TEXT,
+        definition TEXT NOT NULL,
+        short_definition TEXT,
+        cached_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE local_word_cards (
+        id TEXT PRIMARY KEY,
+        server_card_id TEXT,
+        owner_user_id TEXT NOT NULL,
+        card_type TEXT NOT NULL CHECK (card_type IN ('lexeme', 'private_sentence')),
+        lexeme_id TEXT,
+        private_surface TEXT,
+        private_definition TEXT,
+        private_context TEXT,
+        source_book_fingerprint TEXT,
+        source_book_title TEXT,
+        review_status TEXT NOT NULL CHECK (review_status IN ('new', 'learning', 'known')),
+        review_count INTEGER NOT NULL DEFAULT 0 CHECK (review_count >= 0),
+        next_review_at TEXT,
+        last_reviewed_at TEXT,
+        sync_status TEXT NOT NULL CHECK (
+          sync_status IN ('local_only', 'synced', 'dirty', 'failed')
+        ),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        CHECK (
+          (card_type = 'lexeme' AND lexeme_id IS NOT NULL) OR
+          (
+            card_type = 'private_sentence' AND
+            private_surface IS NOT NULL AND
+            private_definition IS NOT NULL
+          )
+        ),
+        FOREIGN KEY (lexeme_id) REFERENCES local_lexeme_cache (id) ON DELETE RESTRICT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX local_word_cards_owner_server_card_idx
+      ON local_word_cards (owner_user_id, server_card_id)
+      WHERE server_card_id IS NOT NULL
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX local_word_cards_owner_lexeme_idx
+      ON local_word_cards (owner_user_id, lexeme_id)
+      WHERE lexeme_id IS NOT NULL
+    ''');
+
+    await db.execute('''
+      CREATE TABLE local_translation_cache (
+        id TEXT PRIMARY KEY,
+        owner_user_id TEXT NOT NULL,
+        book_fingerprint TEXT,
+        chapter_index INTEGER CHECK (chapter_index IS NULL OR chapter_index >= 0),
+        paragraph_index INTEGER CHECK (paragraph_index IS NULL OR paragraph_index >= 0),
+        source_text_hash TEXT NOT NULL CHECK (
+          length(source_text_hash) = 64 AND
+          source_text_hash NOT GLOB '*[^0-9a-f]*'
+        ),
+        source_text_preview TEXT CHECK (
+          source_text_preview IS NULL OR length(source_text_preview) <= 120
+        ),
+        translated_text TEXT NOT NULL,
+        source_lang TEXT NOT NULL,
+        target_lang TEXT NOT NULL,
+        provider TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (owner_user_id, source_lang, target_lang, source_text_hash)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE local_study_daily_stats (
+        id TEXT PRIMARY KEY,
+        owner_user_id TEXT NOT NULL,
+        stat_date TEXT NOT NULL,
+        reading_minutes INTEGER NOT NULL DEFAULT 0 CHECK (reading_minutes >= 0),
+        lookup_count INTEGER NOT NULL DEFAULT 0 CHECK (lookup_count >= 0),
+        paragraph_translation_count INTEGER NOT NULL DEFAULT 0 CHECK (
+          paragraph_translation_count >= 0
+        ),
+        cards_created INTEGER NOT NULL DEFAULT 0 CHECK (cards_created >= 0),
+        cards_reviewed INTEGER NOT NULL DEFAULT 0 CHECK (cards_reviewed >= 0),
+        sync_status TEXT NOT NULL CHECK (
+          sync_status IN ('local_only', 'synced', 'dirty', 'failed')
+        ),
+        last_synced_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (owner_user_id, stat_date)
       )
     ''');
   }

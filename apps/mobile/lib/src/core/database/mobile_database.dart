@@ -28,6 +28,7 @@ class MobileDatabase {
         version: MobileDatabaseMigrations.version,
         onConfigure: _onConfigure,
         onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
       ),
     );
     _database = database;
@@ -48,6 +49,14 @@ class MobileDatabase {
 
   Future<void> _onCreate(sqflite.Database db, int version) async {
     await MobileDatabaseMigrations.create(db, version);
+  }
+
+  Future<void> _onUpgrade(
+    sqflite.Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    await MobileDatabaseMigrations.upgrade(db, oldVersion, newVersion);
   }
 
   Future<String> _defaultDatabasePath() async {
