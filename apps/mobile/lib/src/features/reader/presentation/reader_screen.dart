@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../study/domain/paragraph_selection.dart';
 import '../../study/domain/reader_text_selection.dart';
 import '../../study/presentation/lookup_bottom_sheet.dart';
 import 'reader_controller.dart';
 import 'reading_text_view.dart';
 
 class ReaderScreen extends StatefulWidget {
-  const ReaderScreen({
-    super.key,
-    this.bookId,
-    ReaderController? controller,
-  }) : _controller = controller;
+  const ReaderScreen({super.key, this.bookId, ReaderController? controller})
+    : _controller = controller;
 
   final String? bookId;
   final ReaderController? _controller;
@@ -88,7 +86,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 }
 
-class _ReaderContent extends StatelessWidget {
+class _ReaderContent extends StatefulWidget {
   const _ReaderContent({
     required this.controller,
     required this.showControls,
@@ -100,7 +98,13 @@ class _ReaderContent extends StatelessWidget {
   final VoidCallback onToggleControls;
 
   @override
+  State<_ReaderContent> createState() => _ReaderContentState();
+}
+
+class _ReaderContentState extends State<_ReaderContent> {
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return Scaffold(
       body: AnimatedBuilder(
         animation: controller,
@@ -119,7 +123,7 @@ class _ReaderContent extends StatelessWidget {
                 child: GestureDetector(
                   key: const Key('reader-tap-area'),
                   behavior: HitTestBehavior.opaque,
-                  onTap: onToggleControls,
+                  onTap: widget.onToggleControls,
                   child: SafeArea(
                     child: ReadingTextView(
                       text: chapter.content,
@@ -127,11 +131,20 @@ class _ReaderContent extends StatelessWidget {
                       onLookup: (selection) {
                         _openLookup(context, controller, selection);
                       },
+                      onTranslateParagraph: (selection) {
+                        _translateParagraph(controller, selection);
+                      },
+                      translationStateFor: (selection) {
+                        return controller.paragraphTranslationController
+                            ?.stateFor(
+                              _selectionWithLocation(controller, selection),
+                            );
+                      },
                     ),
                   ),
                 ),
               ),
-              if (showControls) _ReaderControls(controller: controller),
+              if (widget.showControls) _ReaderControls(controller: controller),
             ],
           );
         },
@@ -158,6 +171,35 @@ class _ReaderContent extends StatelessWidget {
       builder: (context) => LookupBottomSheet(controller: lookupController),
     );
   }
+
+  Future<void> _translateParagraph(
+    ReaderController controller,
+    ParagraphSelection selection,
+  ) async {
+    final translationController = await controller
+        .ensureParagraphTranslationController();
+    if (!mounted) {
+      return;
+    }
+    final locatedSelection = _selectionWithLocation(controller, selection);
+    setState(() {});
+    await translationController.translate(locatedSelection);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  ParagraphSelection _selectionWithLocation(
+    ReaderController controller,
+    ParagraphSelection selection,
+  ) {
+    return ParagraphSelection(
+      selectedParagraphText: selection.selectedParagraphText,
+      bookFingerprint: controller.book?.bookFingerprint,
+      chapterIndex: controller.currentChapterIndex,
+      paragraphIndex: selection.paragraphIndex,
+    );
+  }
 }
 
 class _ReaderControls extends StatelessWidget {
@@ -169,7 +211,9 @@ class _ReaderControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final book = controller.book!;
     final chapter = controller.currentChapter!;
-    final surface = Theme.of(context).colorScheme.surface.withValues(alpha: 0.94);
+    final surface = Theme.of(
+      context,
+    ).colorScheme.surface.withValues(alpha: 0.94);
 
     return SafeArea(
       child: Column(

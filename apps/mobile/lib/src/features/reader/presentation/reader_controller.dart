@@ -8,6 +8,7 @@ import '../../library/data/local_chapter_repository.dart';
 import '../../library/domain/local_book.dart';
 import '../../library/domain/local_chapter.dart';
 import '../../library/domain/local_reading_position.dart';
+import '../../study/presentation/paragraph_translation_controller.dart';
 import '../../study/presentation/lookup_controller.dart';
 import '../data/local_reading_position_repository.dart';
 
@@ -18,11 +19,13 @@ class ReaderController extends ChangeNotifier {
     required LocalChapterRepository chapterRepository,
     required LocalReadingPositionRepository positionRepository,
     LookupController? lookupController,
-  })  : _bookId = bookId,
-        _bookRepository = bookRepository,
-        _chapterRepository = chapterRepository,
-        _positionRepository = positionRepository,
-        _lookupController = lookupController;
+    ParagraphTranslationController? paragraphTranslationController,
+  }) : _bookId = bookId,
+       _bookRepository = bookRepository,
+       _chapterRepository = chapterRepository,
+       _positionRepository = positionRepository,
+       _lookupController = lookupController,
+       _paragraphTranslationController = paragraphTranslationController;
 
   static const double minFontSize = 16;
   static const double maxFontSize = 28;
@@ -33,6 +36,7 @@ class ReaderController extends ChangeNotifier {
   final LocalChapterRepository _chapterRepository;
   final LocalReadingPositionRepository _positionRepository;
   LookupController? _lookupController;
+  ParagraphTranslationController? _paragraphTranslationController;
 
   bool _isLoading = false;
   bool _notFound = false;
@@ -52,9 +56,12 @@ class ReaderController extends ChangeNotifier {
   double get fontSize => _fontSize;
   bool get canGoPrevious => _currentChapterIndex > 0;
   bool get canGoNext => _currentChapterIndex < _chapters.length - 1;
-  String get progressLabel =>
-      _chapters.isEmpty ? '0 / 0' : '${_currentChapterIndex + 1} / ${_chapters.length}';
+  String get progressLabel => _chapters.isEmpty
+      ? '0 / 0'
+      : '${_currentChapterIndex + 1} / ${_chapters.length}';
   LookupController? get lookupController => _lookupController;
+  ParagraphTranslationController? get paragraphTranslationController =>
+      _paragraphTranslationController;
 
   static Future<ReaderController> local(String bookId) async {
     final database = await MobileDatabase().open();
@@ -167,6 +174,27 @@ class ReaderController extends ChangeNotifier {
       targetLang: book.targetLang,
     );
     _lookupController = created;
+    return created;
+  }
+
+  Future<ParagraphTranslationController>
+  ensureParagraphTranslationController() async {
+    final existing = _paragraphTranslationController;
+    if (existing != null) {
+      return existing;
+    }
+    final book = _book;
+    if (book == null) {
+      throw StateError(
+        'Cannot create paragraph translation controller without a book',
+      );
+    }
+    final created = await ParagraphTranslationController.local(
+      ownerUserId: book.ownerUserId,
+      sourceLang: book.sourceLang,
+      targetLang: book.targetLang,
+    );
+    _paragraphTranslationController = created;
     return created;
   }
 
