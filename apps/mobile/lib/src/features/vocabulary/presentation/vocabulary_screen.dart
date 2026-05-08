@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../export/anki_export_service.dart';
 import 'anki_export_screen.dart';
 import 'review_controller.dart';
 import 'vocabulary_card_tile.dart';
@@ -10,11 +11,14 @@ class VocabularyScreen extends StatefulWidget {
     super.key,
     VocabularyController? controller,
     ReviewController? reviewController,
+    AnkiExportService ankiExportService = const AnkiExportService(),
   }) : _controller = controller,
-       _reviewController = reviewController;
+       _reviewController = reviewController,
+       _ankiExportService = ankiExportService;
 
   final VocabularyController? _controller;
   final ReviewController? _reviewController;
+  final AnkiExportService _ankiExportService;
 
   @override
   State<VocabularyScreen> createState() => _VocabularyScreenState();
@@ -56,6 +60,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
       return _VocabularyContent(
         controller: controller,
         reviewController: _reviewController,
+        ankiExportService: widget._ankiExportService,
       );
     }
 
@@ -69,6 +74,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
           return _VocabularyContent(
             controller: _controller!,
             reviewController: _reviewController,
+            ankiExportService: widget._ankiExportService,
           );
         }
 
@@ -88,69 +94,93 @@ class _VocabularyContent extends StatelessWidget {
   const _VocabularyContent({
     required this.controller,
     required this.reviewController,
+    required this.ankiExportService,
   });
 
   final VocabularyController controller;
   final ReviewController? reviewController;
+  final AnkiExportService ankiExportService;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
-        appBar: const _VocabularyAppBar(),
-        body: AnimatedBuilder(
-          animation: controller,
-          builder: (context, _) {
-            if (controller.isLoading && controller.allCards.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return Scaffold(
+            appBar: _VocabularyAppBar(
+              allCards: _toAnkiCards(controller.allCards),
+              dueCards: _toAnkiCards(controller.dueCards),
+              privateSentenceCards: _toAnkiCards(
+                controller.privateSentenceCards,
+              ),
+              ankiExportService: ankiExportService,
+            ),
+            body: Builder(
+              builder: (context) {
+                if (controller.isLoading && controller.allCards.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            return TabBarView(
-              children: [
-                _VocabularyList(
-                  cards: controller.dueCards,
-                  emptyTitle: 'No cards due now',
-                  emptyBody: 'New and scheduled cards will appear here.',
-                  errorMessage: controller.errorMessage,
-                  onRefresh: controller.load,
-                  reviewController: reviewController,
-                  onReviewed: controller.load,
-                ),
-                _VocabularyList(
-                  cards: controller.allCards,
-                  emptyTitle: 'No vocabulary cards yet',
-                  emptyBody: 'Saved lookup cards will stay available offline.',
-                  errorMessage: controller.errorMessage,
-                  onRefresh: controller.load,
-                  reviewController: reviewController,
-                  onReviewed: controller.load,
-                ),
-                _VocabularyList(
-                  cards: controller.privateSentenceCards,
-                  emptyTitle: 'No private sentence cards yet',
-                  emptyBody: 'Private sentence cards are shown only for you.',
-                  errorMessage: controller.errorMessage,
-                  onRefresh: controller.load,
-                  reviewController: reviewController,
-                  onReviewed: controller.load,
-                ),
-              ],
-            );
-          },
-        ),
+                return TabBarView(
+                  children: [
+                    _VocabularyList(
+                      cards: controller.dueCards,
+                      emptyTitle: 'No cards due now',
+                      emptyBody: 'New and scheduled cards will appear here.',
+                      errorMessage: controller.errorMessage,
+                      onRefresh: controller.load,
+                      reviewController: reviewController,
+                      onReviewed: controller.load,
+                    ),
+                    _VocabularyList(
+                      cards: controller.allCards,
+                      emptyTitle: 'No vocabulary cards yet',
+                      emptyBody:
+                          'Saved lookup cards will stay available offline.',
+                      errorMessage: controller.errorMessage,
+                      onRefresh: controller.load,
+                      reviewController: reviewController,
+                      onReviewed: controller.load,
+                    ),
+                    _VocabularyList(
+                      cards: controller.privateSentenceCards,
+                      emptyTitle: 'No private sentence cards yet',
+                      emptyBody:
+                          'Private sentence cards are shown only for you.',
+                      errorMessage: controller.errorMessage,
+                      onRefresh: controller.load,
+                      reviewController: reviewController,
+                      onReviewed: controller.load,
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _VocabularyAppBar();
+  const _VocabularyAppBar({
+    this.allCards = const [],
+    this.dueCards = const [],
+    this.privateSentenceCards = const [],
+    this.ankiExportService = const AnkiExportService(),
+  });
+
+  final List<AnkiExportCard> allCards;
+  final List<AnkiExportCard> dueCards;
+  final List<AnkiExportCard> privateSentenceCards;
+  final AnkiExportService ankiExportService;
 
   @override
-  Size get preferredSize => const Size.fromHeight(
-    kToolbarHeight + kTextTabBarHeight,
-  );
+  Size get preferredSize =>
+      const Size.fromHeight(kToolbarHeight + kTextTabBarHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +190,12 @@ class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
         TextButton.icon(
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (context) => const AnkiExportScreen(),
+              builder: (context) => AnkiExportScreen(
+                service: ankiExportService,
+                allCards: allCards,
+                dueCards: dueCards,
+                privateSentenceCards: privateSentenceCards,
+              ),
             ),
           ),
           icon: const Icon(Icons.file_download_outlined),
@@ -176,6 +211,23 @@ class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
+}
+
+List<AnkiExportCard> _toAnkiCards(List<VocabularyCardView> cards) {
+  return [
+    for (final card in cards)
+      AnkiExportCard(
+        id: card.id,
+        front: card.surface,
+        reading: card.reading,
+        meaning: card.definition,
+        example: card.isPrivateSentence ? card.privateContext : null,
+        tags: [
+          card.isPrivateSentence ? 'private_sentence' : 'lexeme',
+          card.reviewStatus,
+        ],
+      ),
+  ];
 }
 
 class _VocabularyList extends StatelessWidget {
@@ -223,20 +275,14 @@ class _VocabularyList extends StatelessWidget {
     );
   }
 
-  Future<void> _review({
-    required String cardId,
-    required bool known,
-  }) async {
+  Future<void> _review({required String cardId, required bool known}) async {
     await reviewController!.reviewCard(cardId: cardId, known: known);
     await onReviewed();
   }
 }
 
 class _EmptyVocabularyState extends StatelessWidget {
-  const _EmptyVocabularyState({
-    required this.title,
-    required this.body,
-  });
+  const _EmptyVocabularyState({required this.title, required this.body});
 
   final String title;
   final String body;

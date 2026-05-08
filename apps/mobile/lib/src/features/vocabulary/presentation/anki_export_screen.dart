@@ -7,9 +7,18 @@ class AnkiExportScreen extends StatefulWidget {
   const AnkiExportScreen({
     super.key,
     AnkiExportService service = const AnkiExportService(),
-  }) : _service = service;
+    List<AnkiExportCard> allCards = const [],
+    List<AnkiExportCard> dueCards = const [],
+    List<AnkiExportCard> privateSentenceCards = const [],
+  }) : _service = service,
+       _allCards = allCards,
+       _dueCards = dueCards,
+       _privateSentenceCards = privateSentenceCards;
 
   final AnkiExportService _service;
+  final List<AnkiExportCard> _allCards;
+  final List<AnkiExportCard> _dueCards;
+  final List<AnkiExportCard> _privateSentenceCards;
 
   @override
   State<AnkiExportScreen> createState() => _AnkiExportScreenState();
@@ -28,10 +37,7 @@ class _AnkiExportScreenState extends State<AnkiExportScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(
-            'Export range',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Export range', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           SegmentedButton<AnkiExportScope>(
             segments: const [
@@ -84,7 +90,7 @@ class _AnkiExportScreenState extends State<AnkiExportScreen> {
 
   void _export() {
     widget._service.exportText(
-      cards: const [],
+      cards: _cardsForScope(_scope),
       options: AnkiExportOptions(
         scope: _scope,
         includeExamples: _includeExamples,
@@ -92,6 +98,14 @@ class _AnkiExportScreenState extends State<AnkiExportScreen> {
       ),
     );
     setState(() => _isComplete = true);
+  }
+
+  List<AnkiExportCard> _cardsForScope(AnkiExportScope scope) {
+    return switch (scope) {
+      AnkiExportScope.allCards => widget._allCards,
+      AnkiExportScope.dueCards => widget._dueCards,
+      AnkiExportScope.privateSentenceCards => widget._privateSentenceCards,
+    };
   }
 }
 
