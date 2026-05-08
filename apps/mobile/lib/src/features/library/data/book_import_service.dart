@@ -19,7 +19,14 @@ import 'local_chapter_repository.dart';
 import 'stored_book_file.dart';
 import 'txt_book_parser.dart';
 
-class BookImportService {
+abstract interface class BookImporter {
+  Future<BookImportResult> importBook({
+    required String ownerUserId,
+    required File sourceFile,
+  });
+}
+
+class BookImportService implements BookImporter {
   const BookImportService({
     required Database database,
     required BookFileStorageService storageService,
@@ -35,6 +42,7 @@ class BookImportService {
   final TxtBookParser _txtParser;
   final EpubBookParser _epubParser;
 
+  @override
   Future<BookImportResult> importBook({
     required String ownerUserId,
     required File sourceFile,
