@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'anki_export_screen.dart';
 import 'review_controller.dart';
 import 'vocabulary_card_tile.dart';
 import 'vocabulary_controller.dart';
@@ -71,9 +72,12 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
           );
         }
 
-        return const Scaffold(
-          appBar: _VocabularyAppBar(),
-          body: Center(child: Text('Loading vocabulary...')),
+        return const DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            appBar: _VocabularyAppBar(),
+            body: Center(child: Text('Loading vocabulary...')),
+          ),
         );
       },
     );
@@ -152,6 +156,17 @@ class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: const Text('Vocabulary'),
+      actions: [
+        TextButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const AnkiExportScreen(),
+            ),
+          ),
+          icon: const Icon(Icons.file_download_outlined),
+          label: const Text('Export'),
+        ),
+      ],
       bottom: const TabBar(
         tabs: [
           Tab(text: 'Due'),
