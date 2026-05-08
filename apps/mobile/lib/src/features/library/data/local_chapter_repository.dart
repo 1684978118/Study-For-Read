@@ -34,4 +34,16 @@ class LocalChapterRepository {
     }
     return LocalChapter.fromMap(rows.single);
   }
+
+  Future<List<LocalChapter>> findByBookIdOrderByChapterIndex(
+    String bookId,
+  ) async {
+    final rows = await _db.query(
+      'local_chapters',
+      where: 'book_id = ?',
+      whereArgs: [bookId],
+      orderBy: 'chapter_index ASC',
+    );
+    return rows.map(LocalChapter.fromMap).toList(growable: false);
+  }
 }

@@ -46,3 +46,23 @@ class LocalBookRepository {
     return rows.map(LocalBook.fromMap).toList(growable: false);
   }
 }
+
+Future<LocalBook?> findLocalBookById(
+  LocalBookRepository repository,
+  String id,
+) async {
+  try {
+    return await (repository as dynamic).findById(id) as LocalBook?;
+  } on NoSuchMethodError {
+    final rows = await repository._db.query(
+      'local_books',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    return LocalBook.fromMap(rows.single);
+  }
+}

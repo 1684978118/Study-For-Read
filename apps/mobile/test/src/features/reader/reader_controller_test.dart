@@ -1,0 +1,231 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:study_for_read_mobile/src/features/library/data/local_book_repository.dart';
+import 'package:study_for_read_mobile/src/features/library/data/local_chapter_repository.dart';
+import 'package:study_for_read_mobile/src/features/library/domain/local_book.dart';
+import 'package:study_for_read_mobile/src/features/library/domain/local_chapter.dart';
+import 'package:study_for_read_mobile/src/features/library/domain/local_reading_position.dart';
+import 'package:study_for_read_mobile/src/features/reader/data/local_reading_position_repository.dart';
+import 'package:study_for_read_mobile/src/features/reader/presentation/reader_controller.dart';
+
+void main() {
+  test('loads saved chapter index for a valid local book id', () async {
+    final controller = _controller(savedChapterIndex: 1);
+
+    await controller.load();
+
+    expect(controller.book?.id, 'book-1');
+    expect(controller.currentChapterIndex, 1);
+    expect(controller.currentChapter?.title, 'Chapter 2');
+    expect(controller.currentChapter?.content, 'second chapter text');
+  });
+
+  test('missing local book id becomes not found', () async {
+    final controller = _controller(missingBook: true);
+
+    await controller.load();
+
+    expect(controller.notFound, isTrue);
+    expect(controller.currentChapter, isNull);
+  });
+
+  test('next and previous chapters save dirty local reading position', () async {
+    final positionRepository = _FakeReadingPositionRepository(
+      saved: _position(chapterIndex: 0),
+    );
+    final controller = _controller(positionRepository: positionRepository);
+
+    await controller.load();
+    await controller.nextChapter();
+    await controller.previousChapter();
+
+    expect(controller.currentChapterIndex, 0);
+    expect(positionRepository.savedPositions, hasLength(2));
+    expect(positionRepository.savedPositions.first.currentChapterIndex, 1);
+    expect(positionRepository.savedPositions.first.progressSyncStatus, 'dirty');
+    expect(positionRepository.savedPositions.last.currentChapterIndex, 0);
+    expect(positionRepository.savedPositions.last.progressSyncStatus, 'dirty');
+  });
+
+  test('chapter navigation is bounded by first and last chapters', () async {
+    final controller = _controller(savedChapterIndex: 0);
+
+    await controller.load();
+
+    expect(controller.canGoPrevious, isFalse);
+    expect(controller.canGoNext, isTrue);
+
+    await controller.nextChapter();
+    await controller.nextChapter();
+
+    expect(controller.currentChapterIndex, 2);
+    expect(controller.canGoPrevious, isTrue);
+    expect(controller.canGoNext, isFalse);
+  });
+
+  test('font size changes stay within configured min and max', () async {
+    final controller = _controller();
+
+    await controller.load();
+
+    for (var i = 0; i < 20; i++) {
+      controller.decreaseFontSize();
+    }
+    expect(controller.fontSize, ReaderController.minFontSize);
+
+    for (var i = 0; i < 20; i++) {
+      controller.increaseFontSize();
+    }
+    expect(controller.fontSize, ReaderController.maxFontSize);
+  });
+}
+
+ReaderController _controller({
+  LocalBook? book,
+  bool missingBook = false,
+  int savedChapterIndex = 0,
+  _FakeReadingPositionRepository? positionRepository,
+}) {
+  return ReaderController(
+    bookId: 'book-1',
+    bookRepository: _FakeBookRepository(book: missingBook ? null : book ?? _book()),
+    chapterRepository: _FakeChapterRepository(chapters: _chapters()),
+    positionRepository:
+        positionRepository ??
+        _FakeReadingPositionRepository(
+          saved: _position(chapterIndex: savedChapterIndex),
+        ),
+  );
+}
+
+LocalBook _book() {
+  final now = DateTime.utc(2026, 5, 8);
+  return LocalBook(
+    id: 'book-1',
+    ownerUserId: 'user-1',
+    bookFingerprint:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    title: 'Kokoro',
+    author: 'Natsume Soseki',
+    fileType: 'txt',
+    sourceLang: 'ja',
+    targetLang: 'zh-CN',
+    originalFilePath: 'D:/private/books/kokoro.txt',
+    chapterCount: 3,
+    metadataSyncStatus: 'local_only',
+    lastOpenedAt: null,
+    lastSyncedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+List<LocalChapter> _chapters() {
+  return [
+    _chapter(index: 0, title: 'Chapter 1', content: 'first chapter text'),
+    _chapter(index: 1, title: 'Chapter 2', content: 'second chapter text'),
+    _chapter(index: 2, title: 'Chapter 3', content: 'third chapter text'),
+  ];
+}
+
+LocalChapter _chapter({
+  required int index,
+  required String title,
+  required String content,
+}) {
+  final now = DateTime.utc(2026, 5, 8);
+  return LocalChapter(
+    id: 'chapter-$index',
+    bookId: 'book-1',
+    chapterIndex: index,
+    title: title,
+    content: content,
+    paragraphCount: 1,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+LocalReadingPosition _position({required int chapterIndex}) {
+  final now = DateTime.utc(2026, 5, 8);
+  return LocalReadingPosition(
+    id: 'position-1',
+    bookId: 'book-1',
+    currentChapterIndex: chapterIndex,
+    currentParagraphIndex: 0,
+    currentCharOffset: 0,
+    progressSyncStatus: 'local_only',
+    lastReadAt: now,
+    lastSyncedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+class _FakeBookRepository implements LocalBookRepository {
+  _FakeBookRepository({required this.book});
+
+  final LocalBook? book;
+
+  Future<LocalBook?> findById(String id) async => book;
+
+  @override
+  Future<LocalBook?> findByOwnerUserIdAndBookFingerprint({
+    required String ownerUserId,
+    required String bookFingerprint,
+  }) async {
+    return null;
+  }
+
+  @override
+  Future<List<LocalBook>> findByOwnerUserId(String ownerUserId) async => [];
+
+  @override
+  Future<int> insert(LocalBook book) async => 1;
+
+  @override
+  Future<int> update(LocalBook book) async => 1;
+}
+
+class _FakeChapterRepository implements LocalChapterRepository {
+  _FakeChapterRepository({required this.chapters});
+
+  final List<LocalChapter> chapters;
+
+  @override
+  Future<int> deleteByBookId(String bookId) async => 0;
+
+  @override
+  Future<LocalChapter?> findByBookIdAndChapterIndex({
+    required String bookId,
+    required int chapterIndex,
+  }) async {
+    return chapters
+        .where((chapter) => chapter.chapterIndex == chapterIndex)
+        .firstOrNull;
+  }
+
+  @override
+  Future<List<LocalChapter>> findByBookIdOrderByChapterIndex(
+    String bookId,
+  ) async {
+    return chapters;
+  }
+
+  @override
+  Future<int> insert(LocalChapter chapter) async => 1;
+}
+
+class _FakeReadingPositionRepository implements LocalReadingPositionRepository {
+  _FakeReadingPositionRepository({required this.saved});
+
+  final LocalReadingPosition? saved;
+  final List<LocalReadingPosition> savedPositions = [];
+
+  @override
+  Future<LocalReadingPosition?> findByBookId(String bookId) async => saved;
+
+  @override
+  Future<void> upsert(LocalReadingPosition position) async {
+    savedPositions.add(position);
+  }
+}

@@ -80,7 +80,9 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: '/reader/:bookId',
-        builder: (context, state) => const ReaderScreen(),
+        builder: (context, state) => ReaderScreen(
+          bookId: state.pathParameters['bookId'],
+        ),
       ),
     ],
   );
