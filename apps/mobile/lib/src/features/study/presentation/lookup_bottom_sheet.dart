@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../domain/lookup_result.dart';
+import '../../vocabulary/presentation/save_vocabulary_controller.dart';
 import 'lookup_controller.dart';
 
 class LookupBottomSheet extends StatelessWidget {
   const LookupBottomSheet({
     super.key,
     required this.controller,
+    this.saveController,
+    this.sourceBookFingerprint,
+    this.sourceBookTitle,
     this.onSave,
   });
 
   final LookupController controller;
+  final SaveVocabularyController? saveController;
+  final String? sourceBookFingerprint;
+  final String? sourceBookTitle;
   final VoidCallback? onSave;
 
   @override
@@ -29,6 +37,9 @@ class LookupBottomSheet extends StatelessWidget {
               ),
               LookupStatus.success => _LookupResultView(
                 state: state,
+                saveController: saveController,
+                sourceBookFingerprint: sourceBookFingerprint,
+                sourceBookTitle: sourceBookTitle,
                 onSave: onSave,
               ),
               LookupStatus.notFound => _LookupMessage(
@@ -56,9 +67,18 @@ class LookupBottomSheet extends StatelessWidget {
 }
 
 class _LookupResultView extends StatelessWidget {
-  const _LookupResultView({required this.state, required this.onSave});
+  const _LookupResultView({
+    required this.state,
+    required this.saveController,
+    required this.sourceBookFingerprint,
+    required this.sourceBookTitle,
+    required this.onSave,
+  });
 
   final LookupState state;
+  final SaveVocabularyController? saveController;
+  final String? sourceBookFingerprint;
+  final String? sourceBookTitle;
   final VoidCallback? onSave;
 
   @override
@@ -108,15 +128,84 @@ class _LookupResultView extends StatelessWidget {
         const SizedBox(height: 8),
         Text(lexeme.definition),
         const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: onSave,
-            child: const Text('Save'),
-          ),
+        _SaveButton(
+          saveController: saveController,
+          lexeme: lexeme,
+          sourceBookFingerprint: sourceBookFingerprint,
+          sourceBookTitle: sourceBookTitle,
+          onSave: onSave,
         ),
       ],
     );
+  }
+}
+
+class _SaveButton extends StatefulWidget {
+  const _SaveButton({
+    required this.saveController,
+    required this.lexeme,
+    required this.sourceBookFingerprint,
+    required this.sourceBookTitle,
+    required this.onSave,
+  });
+
+  final SaveVocabularyController? saveController;
+  final LookupLexeme lexeme;
+  final String? sourceBookFingerprint;
+  final String? sourceBookTitle;
+  final VoidCallback? onSave;
+
+  @override
+  State<_SaveButton> createState() => _SaveButtonState();
+}
+
+class _SaveButtonState extends State<_SaveButton> {
+  @override
+  Widget build(BuildContext context) {
+    final saveController = widget.saveController;
+    if (saveController == null) {
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: widget.onSave,
+          child: const Text('Save'),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: saveController,
+      builder: (context, _) {
+        final state = saveController.state;
+        return SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: state.status == SaveVocabularyStatus.saving
+                ? null
+                : () async {
+                    widget.onSave?.call();
+                    await saveController.saveLookupLexeme(
+                      widget.lexeme,
+                      sourceBookFingerprint: widget.sourceBookFingerprint,
+                      sourceBookTitle: widget.sourceBookTitle,
+                    );
+                  },
+            child: Text(_labelFor(state)),
+          ),
+        );
+      },
+    );
+  }
+
+  String _labelFor(SaveVocabularyState state) {
+    return switch (state.status) {
+      SaveVocabularyStatus.saving => 'Saving...',
+      SaveVocabularyStatus.saved ||
+      SaveVocabularyStatus.localOnly ||
+      SaveVocabularyStatus.alreadySaved => 'Saved',
+      SaveVocabularyStatus.error => 'Retry',
+      SaveVocabularyStatus.idle => 'Save',
+    };
   }
 }
 

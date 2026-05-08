@@ -41,6 +41,22 @@ class LocalWordCardRepository {
     return LocalWordCard.fromMap(rows.single);
   }
 
+  Future<LocalWordCard?> findByOwnerUserIdAndLexemeId({
+    required String ownerUserId,
+    required String lexemeId,
+  }) async {
+    final rows = await _db.query(
+      'local_word_cards',
+      where: 'owner_user_id = ? AND lexeme_id = ?',
+      whereArgs: [ownerUserId, lexemeId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    return LocalWordCard.fromMap(rows.single);
+  }
+
   Future<List<LocalWordCard>> findByOwnerUserId(String ownerUserId) async {
     final rows = await _db.query(
       'local_word_cards',
