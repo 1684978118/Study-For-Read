@@ -1,0 +1,29 @@
+{
+  "name": "study-for-read-web-reader",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "test": "nuxt prepare && vitest run",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.11.3",
+    "dexie": "^4.2.1",
+    "fast-xml-parser": "^5.3.2",
+    "jszip": "^3.10.1",
+    "nuxt": "^4.2.2",
+    "ofetch": "^1.5.1",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.25",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "^3.21.1",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.0.10",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.1.8"
+  }
+}
