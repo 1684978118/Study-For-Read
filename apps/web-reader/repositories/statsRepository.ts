@@ -50,6 +50,26 @@ export class StatsRepository {
       .first()
   }
 
+  async listByOwner(ownerUserId: string): Promise<WebStudyDailyStats[]> {
+    return this.db.web_study_daily_stats.where('ownerUserId').equals(ownerUserId).toArray()
+  }
+
+  async summarize(ownerUserId: string, range?: { from?: string, to?: string }): Promise<WebStudyDailyStatsCounters> {
+    const rows = await this.listByOwner(ownerUserId)
+    return rows
+      .filter((row) => (!range?.from || row.statDate >= range.from) && (!range?.to || row.statDate <= range.to))
+      .reduce<WebStudyDailyStatsCounters>(
+        (summary, row) => ({
+          readingMinutes: summary.readingMinutes + row.readingMinutes,
+          lookupCount: summary.lookupCount + row.lookupCount,
+          paragraphTranslationCount: summary.paragraphTranslationCount + row.paragraphTranslationCount,
+          cardsCreated: summary.cardsCreated + row.cardsCreated,
+          cardsReviewed: summary.cardsReviewed + row.cardsReviewed,
+        }),
+        this.emptyCounters(),
+      )
+  }
+
   emptyCounters(): WebStudyDailyStatsCounters {
     return { ...zeroCounters }
   }

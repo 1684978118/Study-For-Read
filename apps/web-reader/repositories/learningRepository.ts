@@ -54,6 +54,39 @@ export class LearningRepository {
       .toArray()
   }
 
+  async updateWordCardReview(
+    id: string,
+    review: Pick<WebWordCard, 'reviewStatus' | 'reviewCount' | 'nextReviewAt' | 'lastReviewedAt'>,
+  ): Promise<WebWordCard> {
+    const existing = await this.db.web_word_cards.get(id)
+    if (!existing) {
+      throw new Error('word card not found')
+    }
+    const updated: WebWordCard = {
+      ...existing,
+      ...review,
+      syncStatus: 'dirty',
+      updatedAt: nowIso(),
+    }
+    await this.db.web_word_cards.put(updated)
+    return updated
+  }
+
+  async updateWordCardServerId(id: string, serverCardId: string): Promise<WebWordCard> {
+    const existing = await this.db.web_word_cards.get(id)
+    if (!existing) {
+      throw new Error('word card not found')
+    }
+    const updated: WebWordCard = {
+      ...existing,
+      serverCardId,
+      syncStatus: 'synced',
+      updatedAt: nowIso(),
+    }
+    await this.db.web_word_cards.put(updated)
+    return updated
+  }
+
   async upsertTranslationCache(entry: WebTranslationCacheEntryDraft): Promise<WebTranslationCacheEntry> {
     const now = nowIso()
     const existing = await this.db.web_translation_cache
