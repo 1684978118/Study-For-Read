@@ -10,5 +10,6 @@ public record AdminLexemeUpsertRequest(
         String definition,
         String shortDefinition,
         String example,
+        String exampleSource,
         String status) {
 }

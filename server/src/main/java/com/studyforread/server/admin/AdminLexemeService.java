@@ -144,6 +144,7 @@ public class AdminLexemeService {
         var targetLang = requireText(request.targetLang());
         var entryType = parseEntryType(request.entryType());
         var status = parseStatus(request.status());
+        validateExampleSource(request.exampleSource());
 
         return new LexemeFields(
                 surface,
@@ -157,6 +158,17 @@ public class AdminLexemeService {
                 normalizeBlank(request.shortDefinition()),
                 normalizeBlank(request.example()),
                 status);
+    }
+
+    private void validateExampleSource(String value) {
+        var normalized = normalizeBlank(value);
+        if (normalized == null
+                || "admin".equals(normalized)
+                || "admin_provided".equals(normalized)
+                || "license_safe".equals(normalized)) {
+            return;
+        }
+        throw new InvalidLexemeException();
     }
 
     private LexemeEntryType parseEntryType(String value) {
