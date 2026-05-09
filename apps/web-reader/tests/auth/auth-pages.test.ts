@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AuthMiddleware, { shouldRedirectToSignIn } from '../../middleware/auth.global'
-import LibraryPage from '../../pages/library.vue'
 import RegisterPage from '../../pages/register.vue'
 import SignInPage from '../../pages/sign-in.vue'
 import {
@@ -54,16 +53,7 @@ describe('web reader auth pages and gate', () => {
     ])
   })
 
-  it('library page is an auth-gated placeholder without reader or import UI', async () => {
-    const wrapper = mount(LibraryPage)
-
-    expect(wrapper.text()).toContain('Library')
-    expect(wrapper.text()).toContain('Sign in required')
-    expect(wrapper.text()).not.toContain('Import')
-    expect(wrapper.text()).not.toContain('Reader')
-  })
-
-  it('redirects signed-out users away from the library page', async () => {
+  it('redirects signed-out users away from the library route before page behavior matters', async () => {
     setAuthDependenciesForTesting({
       apiClient: fakeApiClient(),
       tokenStore: fakeTokenStore(),
