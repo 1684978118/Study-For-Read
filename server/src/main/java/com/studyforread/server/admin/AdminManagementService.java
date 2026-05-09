@@ -12,6 +12,10 @@ import com.studyforread.server.user.UserAccountRepository;
 import com.studyforread.server.user.UserStatus;
 import com.studyforread.server.vocabulary.LexemeRepository;
 import com.studyforread.server.vocabulary.UserWordCardRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
@@ -32,7 +36,7 @@ public class AdminManagementService {
     private final ObjectProvider<LexemeRepository> lexemeRepositoryProvider;
     private final ObjectProvider<UserWordCardRepository> userWordCardRepositoryProvider;
     private final ObjectProvider<StudyDailyStatRepository> studyDailyStatRepositoryProvider;
-    private final ObjectProvider<AdminAuditLogRepository> adminAuditLogRepositoryProvider;
+    private final ObjectProvider<EntityManager> entityManagerProvider;
 
     public AdminManagementService(
             ObjectProvider<UserAccountRepository> userAccountRepositoryProvider,
@@ -40,13 +44,13 @@ public class AdminManagementService {
             ObjectProvider<LexemeRepository> lexemeRepositoryProvider,
             ObjectProvider<UserWordCardRepository> userWordCardRepositoryProvider,
             ObjectProvider<StudyDailyStatRepository> studyDailyStatRepositoryProvider,
-            ObjectProvider<AdminAuditLogRepository> adminAuditLogRepositoryProvider) {
+            ObjectProvider<EntityManager> entityManagerProvider) {
         this.userAccountRepositoryProvider = userAccountRepositoryProvider;
         this.userBookRepositoryProvider = userBookRepositoryProvider;
         this.lexemeRepositoryProvider = lexemeRepositoryProvider;
         this.userWordCardRepositoryProvider = userWordCardRepositoryProvider;
         this.studyDailyStatRepositoryProvider = studyDailyStatRepositoryProvider;
-        this.adminAuditLogRepositoryProvider = adminAuditLogRepositoryProvider;
+        this.entityManagerProvider = entityManagerProvider;
     }
 
     @Transactional(readOnly = true)
@@ -89,17 +93,16 @@ public class AdminManagementService {
             String targetType,
             String action) {
         var pageable = pageRequest(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        var logs = adminAuditLogRepository().searchForAdmin(
-                adminUserId,
-                normalizeBlank(targetType),
-                normalizeBlank(action),
-                pageable);
+        var normalizedTargetType = normalizeBlank(targetType);
+        var normalizedAction = normalizeBlank(action);
+        var logs = queryAuditLogs(adminUserId, normalizedTargetType, normalizedAction, pageable);
+        var total = countAuditLogs(adminUserId, normalizedTargetType, normalizedAction);
 
         return new AdminAuditLogListResponse(
-                logs.getContent().stream().map(this::toAuditLogResponse).toList(),
-                logs.getNumber(),
-                logs.getSize(),
-                logs.getTotalElements());
+                logs.stream().map(this::toAuditLogResponse).toList(),
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                total);
     }
 
     private AdminUserSummaryResponse toUserSummary(UserAccount user) {
@@ -177,7 +180,68 @@ public class AdminManagementService {
         return studyDailyStatRepositoryProvider.getObject();
     }
 
-    private AdminAuditLogRepository adminAuditLogRepository() {
-        return adminAuditLogRepositoryProvider.getObject();
+    private List<AdminAuditLog> queryAuditLogs(
+            UUID adminUserId,
+            String targetType,
+            String action,
+            PageRequest pageable) {
+        var query = entityManager().createQuery(
+                auditLogQuery("select log", "join fetch", adminUserId, targetType, action)
+                        + " order by log.createdAt desc",
+                AdminAuditLog.class);
+        bindAuditLogParameters(query, adminUserId, targetType, action);
+        query.setFirstResult(Math.toIntExact(pageable.getOffset()));
+        query.setMaxResults(pageable.getPageSize());
+        return query.getResultList();
+    }
+
+    private long countAuditLogs(UUID adminUserId, String targetType, String action) {
+        var query = entityManager().createQuery(
+                auditLogQuery("select count(log)", "join", adminUserId, targetType, action),
+                Long.class);
+        bindAuditLogParameters(query, adminUserId, targetType, action);
+        return query.getSingleResult();
+    }
+
+    private String auditLogQuery(
+            String selectClause,
+            String adminUserJoin,
+            UUID adminUserId,
+            String targetType,
+            String action) {
+        var conditions = new ArrayList<String>();
+        if (adminUserId != null) {
+            conditions.add("log.adminUser.id = :adminUserId");
+        }
+        if (targetType != null) {
+            conditions.add("log.targetType = :targetType");
+        }
+        if (action != null) {
+            conditions.add("log.action = :action");
+        }
+
+        return selectClause
+                + " from AdminAuditLog log " + adminUserJoin + " log.adminUser"
+                + (conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions));
+    }
+
+    private <T> void bindAuditLogParameters(
+            TypedQuery<T> query,
+            UUID adminUserId,
+            String targetType,
+            String action) {
+        if (adminUserId != null) {
+            query.setParameter("adminUserId", adminUserId);
+        }
+        if (targetType != null) {
+            query.setParameter("targetType", targetType);
+        }
+        if (action != null) {
+            query.setParameter("action", action);
+        }
+    }
+
+    private EntityManager entityManager() {
+        return entityManagerProvider.getObject();
     }
 }
