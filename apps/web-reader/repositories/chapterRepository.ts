@@ -25,6 +25,24 @@ export class ChapterRepository {
     return chapter
   }
 
+  async replaceForBook(bookId: string, drafts: WebChapterDraft[]): Promise<WebChapter[]> {
+    if (!bookId.trim()) {
+      throw new Error('bookId is required')
+    }
+    drafts.forEach(validateChapterDraft)
+    const now = nowIso()
+    const chapters = drafts.map((draft) => ({
+      ...draft,
+      createdAt: now,
+      updatedAt: now,
+    }))
+    await this.db.transaction('rw', this.db.web_chapters, async () => {
+      await this.db.web_chapters.where('bookId').equals(bookId).delete()
+      await this.db.web_chapters.bulkPut(chapters)
+    })
+    return chapters
+  }
+
   async listByBookId(bookId: string): Promise<WebChapter[]> {
     const chapters = await this.db.web_chapters.where('bookId').equals(bookId).toArray()
     return chapters.sort((a, b) => a.chapterIndex - b.chapterIndex)

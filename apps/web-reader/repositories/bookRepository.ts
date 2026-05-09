@@ -37,7 +37,8 @@ export class BookRepository {
   }
 
   async listByOwnerUserId(ownerUserId: string): Promise<WebBook[]> {
-    return this.db.web_books.where('ownerUserId').equals(ownerUserId).toArray()
+    const books = await this.db.web_books.where('ownerUserId').equals(ownerUserId).toArray()
+    return books.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   }
 }
 
