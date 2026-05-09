@@ -79,6 +79,9 @@ Rules:
 - Secrets must be provided through runtime environment files or host secret management, not committed.
 - `.env.example` must contain placeholders only.
 - Translation provider keys stay on the server and must not be exposed to mobile or web clients.
+- Operators create `.env` manually from `.env.example`; the repository must not contain a real `.env`.
+- User and admin JWT secrets must be separate values.
+- Public web API base variables may be relative paths or example hostnames, but real production hostnames belong in local runtime configuration only.
 
 ## 5. Volumes
 
@@ -186,4 +189,3 @@ Do not implement in first release:
 - Full observability stack.
 - Payment infrastructure.
 - Full-text search over user books.
-

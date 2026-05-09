@@ -75,12 +75,12 @@ Expected red or neutral result:
 
 ## Implementation Steps
 
-- [ ] Step 1: Read deployment spec and list required variables.
-- [ ] Step 2: Create `.env.example` with placeholder values only.
-- [ ] Step 3: Create `infra/README.md` with first deployment overview.
-- [ ] Step 4: Create `infra/env/README.md` explaining secret handling and how to create local `.env` manually.
-- [ ] Step 5: Ensure no real API keys, passwords, tokens, or hostnames are committed.
-- [ ] Step 6: Run verification command.
+- [x] Step 1: Read deployment spec and list required variables.
+- [x] Step 2: Create `.env.example` with placeholder values only.
+- [x] Step 3: Create `infra/README.md` with first deployment overview.
+- [x] Step 4: Create `infra/env/README.md` explaining secret handling and how to create local `.env` manually.
+- [x] Step 5: Ensure no real API keys, passwords, tokens, or hostnames are committed.
+- [x] Step 6: Run verification command.
 
 ## Verification Commands
 
@@ -113,4 +113,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
