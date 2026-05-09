@@ -2,8 +2,8 @@
   <AdminShell>
     <section class="admin-page">
       <header class="admin-page__header">
-        <h2>Dashboard</h2>
-        <p>Aggregate platform counters only.</p>
+        <h2>Platform stats</h2>
+        <p>Aggregate counters across users and study activity.</p>
       </header>
       <p v-if="dashboard.error" class="inline-error">{{ dashboard.error }}</p>
       <AdminMetricGrid :summary="dashboard.summary" />
