@@ -87,6 +87,39 @@ public class Lexeme {
         this.status = status.databaseValue();
     }
 
+    public void assignCreatedByAdminId(UUID createdByAdminId) {
+        this.createdByAdminId = createdByAdminId;
+    }
+
+    public void updatePublicFields(
+            String surface,
+            String normalizedSurface,
+            String reading,
+            String sourceLang,
+            String targetLang,
+            LexemeEntryType entryType,
+            String partOfSpeech,
+            String definition,
+            String shortDefinition,
+            String example,
+            LexemeStatus status) {
+        this.surface = surface;
+        this.normalizedSurface = normalizedSurface;
+        this.reading = reading;
+        this.sourceLang = sourceLang;
+        this.targetLang = targetLang;
+        this.entryType = entryType.databaseValue();
+        this.partOfSpeech = partOfSpeech;
+        this.definition = definition;
+        this.shortDefinition = shortDefinition;
+        this.example = example;
+        this.status = status.databaseValue();
+    }
+
+    public void reject() {
+        this.status = LexemeStatus.REJECTED.databaseValue();
+    }
+
     @PrePersist
     void prePersist() {
         if (id == null) {
