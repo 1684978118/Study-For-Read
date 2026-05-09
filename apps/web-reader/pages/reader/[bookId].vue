@@ -35,6 +35,15 @@
         :content="reader.currentChapter.content"
         :font-size="reader.fontSize"
         :theme="reader.theme"
+        :lookup-text="selectedText"
+        :translations="paragraphTranslations"
+        :on-lookup="lookupSelectedText"
+        :on-translate-paragraph="translateParagraph"
+      />
+      <LookupPopover
+        v-if="study.lookupResult"
+        :result="study.lookupResult"
+        @save="saveLookupResult"
       />
       <ReaderControls
         :can-go-previous="reader.canGoPrevious"
@@ -54,13 +63,20 @@
 import ReaderControls from '../../components/reader/ReaderControls.vue'
 import ReaderHeader from '../../components/reader/ReaderHeader.vue'
 import ReaderText from '../../components/reader/ReaderText.vue'
+import LookupPopover from '../../components/study/LookupPopover.vue'
 import { useReaderStore } from '../../stores/reader'
+import { useStudyStore } from '../../stores/study'
+import { useVocabularyStore } from '../../stores/vocabulary'
 
 const props = defineProps<{
   bookId?: string
 }>()
 
 const reader = useReaderStore()
+const study = useStudyStore()
+const vocabulary = useVocabularyStore()
+const selectedText = ref('')
+const paragraphTranslations = reactive<Record<number, string>>({})
 
 onMounted(async () => {
   await reader.openBook(resolveBookId())
@@ -95,6 +111,47 @@ async function runReaderCommand(command: () => Promise<void>): Promise<void> {
   catch (error) {
     reader.errorMessage = error instanceof Error ? error.message : 'Reader action failed.'
   }
+}
+
+async function lookupSelectedText(text: string, paragraphContext?: string): Promise<void> {
+  selectedText.value = text
+  if (!reader.book) {
+    return
+  }
+  await study.lookupSelectedText({
+    ownerUserId: reader.book.ownerUserId,
+    text,
+    paragraphContext,
+    sourceLang: reader.book.sourceLang,
+    targetLang: reader.book.targetLang,
+  })
+}
+
+async function translateParagraph(paragraph: string, paragraphIndex: number): Promise<void> {
+  if (!reader.book) {
+    return
+  }
+  await study.translateParagraph({
+    ownerUserId: reader.book.ownerUserId,
+    paragraph,
+    sourceLang: reader.book.sourceLang,
+    targetLang: reader.book.targetLang,
+  })
+  if (study.translationResult?.translatedText) {
+    paragraphTranslations[paragraphIndex] = study.translationResult.translatedText
+  }
+}
+
+async function saveLookupResult(): Promise<void> {
+  if (!reader.book || !study.lookupResult?.lexeme) {
+    return
+  }
+  await vocabulary.savePublicLexemeCard({
+    ownerUserId: reader.book.ownerUserId,
+    lexeme: study.lookupResult.lexeme,
+    sourceBookFingerprint: reader.book.bookFingerprint,
+    sourceBookTitle: reader.book.title,
+  })
 }
 </script>
 
