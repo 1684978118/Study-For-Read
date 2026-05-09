@@ -24,8 +24,10 @@ describe('admin auth pages', () => {
     const page = await source('pages/admin/index.vue')
 
     expect(page).toContain('Admin')
-    expect(page).toContain('Signed in')
-    expect(page).not.toContain('Dashboard summary')
+    expect(page).toContain('AdminShell')
+    expect(page).toContain('Dashboard')
+    expect(page).toContain('AdminMetricGrid')
+    expect(page).not.toContain('Signed in')
     expect(page).not.toContain('Audit logs')
     expect(page).not.toContain('Lexemes')
   })
