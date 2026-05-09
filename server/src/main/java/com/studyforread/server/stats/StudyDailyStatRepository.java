@@ -36,4 +36,26 @@ public interface StudyDailyStatRepository extends JpaRepository<StudyDailyStat, 
             @Param("cardsCreated") int cardsCreated,
             @Param("cardsReviewed") int cardsReviewed,
             @Param("updatedAt") OffsetDateTime updatedAt);
+
+    @Query("""
+            select coalesce(sum(stat.readingMinutes), 0) as readingMinutes,
+                   coalesce(sum(stat.lookupCount), 0) as lookupCount,
+                   coalesce(sum(stat.paragraphTranslationCount), 0) as paragraphTranslationCount,
+                   coalesce(sum(stat.cardsCreated), 0) as cardsCreated,
+                   coalesce(sum(stat.cardsReviewed), 0) as cardsReviewed
+            from StudyDailyStat stat
+            """)
+    PlatformStatsTotals sumPlatformTotals();
+
+    interface PlatformStatsTotals {
+        long getReadingMinutes();
+
+        long getLookupCount();
+
+        long getParagraphTranslationCount();
+
+        long getCardsCreated();
+
+        long getCardsReviewed();
+    }
 }
