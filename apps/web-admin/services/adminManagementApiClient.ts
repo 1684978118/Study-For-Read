@@ -39,6 +39,36 @@ const forbiddenDetailKeys = new Set([
   'private_sentence_context',
 ])
 
+const forbiddenDetailValueSnippets = [
+  'content',
+  'chaptercontent',
+  'chapter_content',
+  'originalfile',
+  'original_file',
+  'filepath',
+  'file_path',
+  'sourcetext',
+  'source_text',
+  'rawtext',
+  'raw_text',
+  'translatedtext',
+  'translated_text',
+  'paragraphtext',
+  'paragraph_text',
+  'passwordhash',
+  'password_hash',
+  'tokenhash',
+  'token_hash',
+  'password',
+  'token',
+  'privatesentencecontext',
+  'private_sentence_context',
+  'user_private',
+  'raw book content',
+  'private sentence context',
+  'raw translated text',
+]
+
 export interface AdminManagementApiClient {
   getStatsSummary(accessToken: string): Promise<AdminPlatformStatsSummary>
   listUsers(
@@ -141,9 +171,16 @@ export function useAdminManagementApiClient(): AdminManagementApiClient {
 
 export function renderRedactedDetails(details: Record<string, unknown>): string {
   return Object.entries(details)
-    .filter(([key]) => !forbiddenDetailKeys.has(key.toLowerCase()))
+    .filter(([key, value]) => !isForbiddenDetail(key, value))
     .map(([key, value]) => `${key}: ${String(value)}`)
     .join(', ')
+}
+
+function isForbiddenDetail(key: string, value: unknown): boolean {
+  if (forbiddenDetailKeys.has(key.toLowerCase())) return true
+  if (typeof value !== 'string') return false
+  const normalizedValue = value.toLowerCase()
+  return forbiddenDetailValueSnippets.some((snippet) => normalizedValue.includes(snippet))
 }
 
 async function defaultFetcher(
