@@ -15,7 +15,13 @@ export interface ParsedBook {
   chapters: ParsedChapter[]
 }
 
-export type ParseFailureCode = 'empty_txt' | 'invalid_utf8'
+export type ParseFailureCode =
+  | 'empty_txt'
+  | 'invalid_utf8'
+  | 'missing_container'
+  | 'missing_package'
+  | 'empty_spine'
+  | 'unreadable_xhtml'
 
 export interface ParseFailure {
   code: ParseFailureCode
