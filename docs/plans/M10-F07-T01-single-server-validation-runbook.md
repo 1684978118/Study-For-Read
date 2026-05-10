@@ -74,12 +74,12 @@ If prior docs are missing, stop and report the blocker.
 
 ## Implementation Steps
 
-- [ ] Step 1: Create `infra/RUNBOOK.md` with first deployment steps.
-- [ ] Step 2: Create `infra/VALIDATION_CHECKLIST.md` with container startup, API health, Web Reader, Web Admin, migrations, login, reading sync rejection of content fields, translation privacy, admin token rejection, backup, and restore checks.
-- [ ] Step 3: Create `RESOURCE_VALIDATION.md` with commands for CPU, memory, disk, and container status.
-- [ ] Step 4: Include a section for recording actual 4-core 4GB validation results.
-- [ ] Step 5: Include blocker reporting format for missing tools or incomplete apps.
-- [ ] Step 6: Run verification command.
+- [x] Step 1: Create `infra/RUNBOOK.md` with first deployment steps.
+- [x] Step 2: Create `infra/VALIDATION_CHECKLIST.md` with container startup, API health, Web Reader, Web Admin, migrations, login, reading sync rejection of content fields, translation privacy, admin token rejection, backup, and restore checks.
+- [x] Step 3: Create `RESOURCE_VALIDATION.md` with commands for CPU, memory, disk, and container status.
+- [x] Step 4: Include a section for recording actual 4-core 4GB validation results.
+- [x] Step 5: Include blocker reporting format for missing tools or incomplete apps.
+- [x] Step 6: Run verification command.
 
 ## Verification Commands
 
@@ -111,4 +111,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
