@@ -70,13 +70,13 @@ If either is missing, stop and report the prior task blocker.
 
 ## Implementation Steps
 
-- [ ] Step 1: Document API, Nginx, and PostgreSQL health checks.
-- [ ] Step 2: Document Docker Compose health check behavior and expected statuses.
-- [ ] Step 3: Document log commands using `docker compose logs`.
-- [ ] Step 4: Document forbidden log content: passwords, tokens, original book content, chapter content, raw lookup text, raw paragraph text, and translated paragraph text.
-- [ ] Step 5: Add troubleshooting commands for failed API, database, Nginx, and web static assets.
-- [ ] Step 6: Update Compose health checks if missing.
-- [ ] Step 7: Run verification command.
+- [x] Step 1: Document API, Nginx, and PostgreSQL health checks.
+- [x] Step 2: Document Docker Compose health check behavior and expected statuses.
+- [x] Step 3: Document log commands using `docker compose logs`.
+- [x] Step 4: Document forbidden log content: passwords, tokens, original book content, chapter content, raw lookup text, raw paragraph text, and translated paragraph text.
+- [x] Step 5: Add troubleshooting commands for failed API, database, Nginx, and web static assets.
+- [x] Step 6: Update Compose health checks if missing.
+- [x] Step 7: Run verification command.
 
 ## Verification Commands
 
@@ -111,4 +111,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
