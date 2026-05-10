@@ -9,6 +9,10 @@ services:
     ports:
       - "${NGINX_HTTP_PORT:-8080}:80"
     volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/html:/usr/share/nginx/health:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
       - ../apps/web-reader/.output/public:/usr/share/nginx/html:ro
       - ../apps/web-admin/.output/public:/usr/share/nginx/admin:ro
 

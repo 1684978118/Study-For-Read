@@ -70,15 +70,15 @@ If Compose file is missing, stop and report that M10-F03-T01 is incomplete.
 
 ## Implementation Steps
 
-- [ ] Step 1: Create base `nginx.conf` without request body logging.
-- [ ] Step 2: Create site config routing `/api/` to API upstream.
-- [ ] Step 3: Route `/admin/` to Web Admin static assets.
-- [ ] Step 4: Route `/` to Web Reader static assets.
-- [ ] Step 5: Add static `/health` response.
-- [ ] Step 6: Add HTTPS certificate paths as documented placeholders.
-- [ ] Step 7: Update Compose Nginx mounts if needed.
-- [ ] Step 8: Create `infra/nginx/README.md` with certificate setup notes.
-- [ ] Step 9: Run verification command.
+- [x] Step 1: Create base `nginx.conf` without request body logging.
+- [x] Step 2: Create site config routing `/api/` to API upstream.
+- [x] Step 3: Route `/admin/` to Web Admin static assets.
+- [x] Step 4: Route `/` to Web Reader static assets.
+- [x] Step 5: Add static `/health` response.
+- [x] Step 6: Add HTTPS certificate paths as documented placeholders.
+- [x] Step 7: Update Compose Nginx mounts if needed.
+- [x] Step 8: Create `infra/nginx/README.md` with certificate setup notes.
+- [x] Step 9: Run verification command.
 
 ## Verification Commands
 
@@ -112,4 +112,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
