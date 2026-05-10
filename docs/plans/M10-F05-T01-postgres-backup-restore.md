@@ -68,13 +68,13 @@ If Compose file is missing, stop and report that M10-F03-T01 is incomplete.
 
 ## Implementation Steps
 
-- [ ] Step 1: Create `backup-postgres.ps1` that runs `pg_dump` through the PostgreSQL container.
-- [ ] Step 2: Name backup files with UTC timestamp.
-- [ ] Step 3: Ensure script does not print database password.
-- [ ] Step 4: Create `restore-postgres.ps1` for restoring into a named target database/container.
-- [ ] Step 5: Add guard text requiring restore target confirmation and forbidding live production overwrite in tests.
-- [ ] Step 6: Add backup and restore docs.
-- [ ] Step 7: Do not implement retention deletion in this task.
+- [x] Step 1: Create `backup-postgres.ps1` that runs `pg_dump` through the PostgreSQL container.
+- [x] Step 2: Name backup files with UTC timestamp.
+- [x] Step 3: Ensure script does not print database password.
+- [x] Step 4: Create `restore-postgres.ps1` for restoring into a named target database/container.
+- [x] Step 5: Add guard text requiring restore target confirmation and forbidding live production overwrite in tests.
+- [x] Step 6: Add backup and restore docs.
+- [x] Step 7: Do not implement retention deletion in this task.
 - [ ] Step 8: Run verification command.
 
 ## Verification Commands
@@ -111,4 +111,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
