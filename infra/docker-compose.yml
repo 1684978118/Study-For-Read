@@ -1,0 +1,62 @@
+name: study-for-read
+
+services:
+  nginx:
+    image: nginx:${NGINX_IMAGE_TAG:-1.27-alpine}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${NGINX_HTTP_PORT:-8080}:80"
+    volumes:
+      - ../apps/web-reader/.output/public:/usr/share/nginx/html:ro
+      - ../apps/web-admin/.output/public:/usr/share/nginx/admin:ro
+
+  api:
+    image: study-for-read-api:${API_IMAGE_TAG:-local}
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/study_for_read_example}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-study_for_read_example}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-change-me-datasource-password}
+      JWT_SECRET: ${JWT_SECRET:-change-me-user-jwt-secret-at-least-32-bytes}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-change-me-admin-jwt-secret-at-least-32-bytes}
+      API_BASE_URL: ${API_BASE_URL:-http://api.example.local:8080}
+      TRANSLATION_PROVIDER: ${TRANSLATION_PROVIDER:-placeholder-provider}
+      TRANSLATION_PROVIDER_API_KEY: ${TRANSLATION_PROVIDER_API_KEY:-change-me-translation-provider-key}
+      TRANSLATION_TEXT_MAX_LENGTH: ${TRANSLATION_TEXT_MAX_LENGTH:-2000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://web-reader.example.local,http://web-admin.example.local}
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG:-17-alpine}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-study_for_read_example}
+      POSTGRES_USER: ${POSTGRES_USER:-study_for_read_example}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_BACKUP_HOST_DIR:-../infra/backups}:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres_data:

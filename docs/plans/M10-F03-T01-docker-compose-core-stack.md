@@ -71,15 +71,15 @@ If either is missing, stop and report the prior task blocker.
 
 ## Implementation Steps
 
-- [ ] Step 1: Create `infra/docker-compose.yml` with `nginx`, `api`, and `postgres`.
-- [ ] Step 2: Wire API database variables from environment.
-- [ ] Step 3: Add PostgreSQL named data volume.
-- [ ] Step 4: Add host-mounted backup directory path placeholder.
-- [ ] Step 5: Add health checks for API and PostgreSQL.
-- [ ] Step 6: Ensure PostgreSQL is not published to the public host interface.
-- [ ] Step 7: Do not add Redis unless a later task explicitly enables it.
-- [ ] Step 8: Create `infra/compose/README.md`.
-- [ ] Step 9: Run verification command.
+- [x] Step 1: Create `infra/docker-compose.yml` with `nginx`, `api`, and `postgres`.
+- [x] Step 2: Wire API database variables from environment.
+- [x] Step 3: Add PostgreSQL named data volume.
+- [x] Step 4: Add host-mounted backup directory path placeholder.
+- [x] Step 5: Add health checks for API and PostgreSQL.
+- [x] Step 6: Ensure PostgreSQL is not published to the public host interface.
+- [x] Step 7: Do not add Redis unless a later task explicitly enables it.
+- [x] Step 8: Create `infra/compose/README.md`.
+- [x] Step 9: Run verification command.
 
 ## Verification Commands
 
@@ -113,4 +113,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
