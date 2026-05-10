@@ -70,13 +70,13 @@ If server build files do not exist, stop and report that M1 implementation is in
 
 ## Implementation Steps
 
-- [ ] Step 1: Confirm server build tool and Java version.
-- [ ] Step 2: Create multi-stage `server/Dockerfile`.
-- [ ] Step 3: Configure runtime stage to use a non-root user when feasible.
-- [ ] Step 4: Set JVM memory defaults suitable for a 4GB server.
-- [ ] Step 5: Create `server/.dockerignore`.
-- [ ] Step 6: Add `server/README_DEPLOYMENT.md` with build and run examples using placeholder env vars.
-- [ ] Step 7: Run verification command.
+- [x] Step 1: Confirm server build tool and Java version.
+- [x] Step 2: Create multi-stage `server/Dockerfile`.
+- [x] Step 3: Configure runtime stage to use a non-root user when feasible.
+- [x] Step 4: Set JVM memory defaults suitable for a 4GB server.
+- [x] Step 5: Create `server/.dockerignore`.
+- [x] Step 6: Add `server/README_DEPLOYMENT.md` with build and run examples using placeholder env vars.
+- [x] Step 7: Run verification command.
 
 ## Verification Commands
 
@@ -109,4 +109,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
