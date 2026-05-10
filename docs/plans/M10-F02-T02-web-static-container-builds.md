@@ -82,13 +82,13 @@ If either app is missing, stop and report the relevant prior milestone is incomp
 
 ## Implementation Steps
 
-- [ ] Step 1: Confirm Web Reader and Web Admin package scripts.
-- [ ] Step 2: Configure Web Reader for first-release static output if needed.
-- [ ] Step 3: Configure Web Admin for first-release static output if needed.
-- [ ] Step 4: Ensure public API base URLs are read from runtime-safe public config.
-- [ ] Step 5: Add or update `.dockerignore` files to exclude node modules, local env files, test output, and secrets.
-- [ ] Step 6: Add deployment READMEs for both web apps.
-- [ ] Step 7: Run verification command.
+- [x] Step 1: Confirm Web Reader and Web Admin package scripts.
+- [x] Step 2: Configure Web Reader for first-release static output if needed.
+- [x] Step 3: Configure Web Admin for first-release static output if needed.
+- [x] Step 4: Ensure public API base URLs are read from runtime-safe public config.
+- [x] Step 5: Add or update `.dockerignore` files to exclude node modules, local env files, test output, and secrets.
+- [x] Step 6: Add deployment READMEs for both web apps.
+- [x] Step 7: Run verification command.
 
 ## Verification Commands
 
@@ -126,4 +126,3 @@ Reply with:
 - Verification result.
 - Blockers.
 - Recommended next task card.
-
