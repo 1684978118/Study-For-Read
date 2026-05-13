@@ -26,6 +26,7 @@ This milestone does not:
 ## Task Order
 
 1. `M11-F01-T01-mobile-settings-acceptance-polish.md`
+2. `M11-F02-T01-mobile-reader-inline-translate-hotspot.md`
 
 Add later task cards only after the next emulator acceptance pass finds a concrete issue.
 

@@ -94,35 +94,53 @@ class _ParagraphView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.end,
-          children: [
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: onLookup == null
-                  ? null
-                  : () => onLookup!(_lookupSelection()),
-              child: Text(paragraph.text, style: textStyle),
-            ),
-            GestureDetector(
-              key: Key('paragraph-translate-hotspot-${paragraph.index}'),
-              behavior: HitTestBehavior.opaque,
-              onTap: onTranslateParagraph == null
-                  ? null
-                  : () => onTranslateParagraph!(selection),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 0, 18, 4),
-                child: Text(
-                  '+',
-                  style: textStyle.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.22),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final hotspotOffset = _hotspotOffset(
+              context: context,
+              style: textStyle,
+              maxWidth: constraints.maxWidth,
+            );
+            return SizedBox(
+              width: constraints.maxWidth,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: onLookup == null
+                        ? null
+                        : () => onLookup!(_lookupSelection()),
+                    child: Text(paragraph.text, style: textStyle),
                   ),
-                ),
+                  Positioned(
+                    left: hotspotOffset.dx,
+                    top: hotspotOffset.dy,
+                    child: GestureDetector(
+                      key: Key(
+                        'paragraph-translate-hotspot-${paragraph.index}',
+                      ),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onTranslateParagraph == null
+                          ? null
+                          : () => onTranslateParagraph!(selection),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 0, 18, 4),
+                        child: Text(
+                          '+',
+                          style: textStyle.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.22),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         ),
         if (translationState != null)
           InlineParagraphTranslation(
@@ -140,6 +158,33 @@ class _ParagraphView extends StatelessWidget {
       selectedText: selectedText,
       paragraphContext: paragraph.text,
     );
+  }
+
+  Offset _hotspotOffset({
+    required BuildContext context,
+    required TextStyle style,
+    required double maxWidth,
+  }) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: paragraph.text, style: style),
+      textDirection: Directionality.of(context),
+      maxLines: null,
+    )..layout(maxWidth: maxWidth);
+    final lines = textPainter.computeLineMetrics();
+    if (lines.isEmpty) {
+      return Offset.zero;
+    }
+
+    final lastLine = lines.last;
+    final left = (lastLine.left + lastLine.width + 4).clamp(
+      0.0,
+      maxWidth - 44,
+    );
+    final top = (lastLine.baseline - lastLine.ascent - 6).clamp(
+      0.0,
+      double.infinity,
+    );
+    return Offset(left, top);
   }
 
   String _firstLookupToken(String value) {

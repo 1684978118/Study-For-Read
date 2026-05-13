@@ -12,6 +12,23 @@ import 'package:study_for_read_mobile/src/features/study/domain/paragraph_select
 import 'package:study_for_read_mobile/src/features/study/presentation/paragraph_translation_controller.dart';
 
 void main() {
+  testWidgets('reader keeps paragraph translate plus near the text end', (
+    tester,
+  ) async {
+    const paragraph =
+        'This acceptance sentence wraps across multiple reader lines and ends '
+        'with a short tail.';
+    await tester.pumpWidget(_app(_controller(content: paragraph)));
+    await tester.pumpAndSettle();
+
+    final paragraphLeft = tester.getTopLeft(find.text(paragraph)).dx;
+    final hotspotLeft = tester
+        .getTopLeft(find.byKey(const Key('paragraph-translate-hotspot-0')))
+        .dx;
+
+    expect(hotspotLeft, greaterThan(paragraphLeft + 120));
+  });
+
   testWidgets('reader shows subtle plus after each paragraph', (tester) async {
     await tester.pumpWidget(_app(_controller()));
     await tester.pumpAndSettle();
@@ -42,14 +59,14 @@ void main() {
       expect(translationController.selections, hasLength(1));
       expect(
         translationController.selections.single.selectedParagraphText,
-        '第一段落です。',
+        'first paragraph for translation.',
       );
       expect(translationController.selections.single.paragraphIndex, 0);
       expect(
         translationController.selections.single.selectedParagraphText,
-        isNot(contains('第二段落')),
+        isNot(contains('second paragraph')),
       );
-      expect(find.text('第一段译文'), findsOneWidget);
+      expect(find.text('translated first paragraph'), findsOneWidget);
       expect(find.text('Copy'), findsNothing);
       expect(find.text('Save'), findsNothing);
       expect(find.text('Collapse'), findsNothing);
@@ -85,11 +102,12 @@ Widget _app(ReaderController controller) {
 
 ReaderController _controller({
   _FakeParagraphTranslationController? translationController,
+  String? content,
 }) {
   return ReaderController(
     bookId: 'book-1',
     bookRepository: _FakeBookRepository(book: _book()),
-    chapterRepository: _FakeChapterRepository(chapters: _chapters()),
+    chapterRepository: _FakeChapterRepository(chapters: _chapters(content)),
     positionRepository: _FakeReadingPositionRepository(saved: _position()),
     paragraphTranslationController:
         translationController ?? _FakeParagraphTranslationController(),
@@ -118,7 +136,7 @@ LocalBook _book() {
   );
 }
 
-List<LocalChapter> _chapters() {
+List<LocalChapter> _chapters([String? content]) {
   final now = DateTime.utc(2026, 5, 8);
   return [
     LocalChapter(
@@ -126,8 +144,10 @@ List<LocalChapter> _chapters() {
       bookId: 'book-1',
       chapterIndex: 0,
       title: 'Chapter 1',
-      content: '第一段落です。\n\n第二段落です。',
-      paragraphCount: 2,
+      content:
+          content ??
+          'first paragraph for translation.\n\nsecond paragraph for translation.',
+      paragraphCount: content == null ? 2 : 1,
       createdAt: now,
       updatedAt: now,
     ),
@@ -154,7 +174,7 @@ class _FakeParagraphTranslationController
     extends ParagraphTranslationController {
   _FakeParagraphTranslationController({
     this.nextState = const ParagraphTranslationState.success(
-      translatedText: '第一段译文',
+      translatedText: 'translated first paragraph',
       provider: 'fallback',
     ),
   }) : super.test();
