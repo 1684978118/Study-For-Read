@@ -87,6 +87,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: _isSubmitting ? null : _submit,
           child: Text(_isSubmitting ? 'Creating...' : 'Create profile'),
         ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: _isSubmitting ? null : () => context.go('/sign-in'),
+          child: const Text('Sign in instead'),
+        ),
       ],
     );
   }

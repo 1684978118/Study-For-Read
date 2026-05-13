@@ -47,6 +47,21 @@ void main() {
     expect(find.text('Next'), findsNothing);
   });
 
+  testWidgets('reader controls expose a close action', (tester) async {
+    var closeCount = 0;
+    await tester.pumpWidget(
+      _app(_controller(), onClose: () => closeCount += 1),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-close-button')));
+    await tester.pumpAndSettle();
+
+    expect(closeCount, 1);
+  });
+
   testWidgets('visible controls reserve space for reading text', (
     tester,
   ) async {
@@ -150,9 +165,13 @@ void main() {
   });
 }
 
-Widget _app(ReaderController controller) {
+Widget _app(ReaderController controller, {VoidCallback? onClose}) {
   return MaterialApp(
-    home: ReaderScreen(bookId: 'book-1', controller: controller),
+    home: ReaderScreen(
+      bookId: 'book-1',
+      controller: controller,
+      onClose: onClose,
+    ),
   );
 }
 

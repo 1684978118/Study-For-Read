@@ -35,26 +35,21 @@ GoRouter createAppRouter({
     routes: [
       GoRoute(
         path: '/',
-        redirect: (context, state) =>
-            authState.value ? '/library' : '/sign-in',
+        redirect: (context, state) => authState.value ? '/library' : '/sign-in',
       ),
       GoRoute(
         path: '/sign-in',
-        builder: (context, state) => SignInScreen(
-          onAuthenticated: () => authState.value = true,
-        ),
+        builder: (context, state) =>
+            SignInScreen(onAuthenticated: () => authState.value = true),
       ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => RegisterScreen(
-          onAuthenticated: () => authState.value = true,
-        ),
+        builder: (context, state) =>
+            RegisterScreen(onAuthenticated: () => authState.value = true),
       ),
       ShellRoute(
-        builder: (context, state, child) => _HomeShell(
-          location: state.uri.path,
-          child: child,
-        ),
+        builder: (context, state, child) =>
+            _HomeShell(location: state.uri.path, child: child),
         routes: [
           GoRoute(
             path: '/library',
@@ -82,6 +77,7 @@ GoRouter createAppRouter({
         path: '/reader/:bookId',
         builder: (context, state) => ReaderScreen(
           bookId: state.pathParameters['bookId'],
+          onClose: () => context.go('/library'),
         ),
       ),
     ],
@@ -89,10 +85,7 @@ GoRouter createAppRouter({
 }
 
 class _HomeShell extends StatelessWidget {
-  const _HomeShell({
-    required this.location,
-    required this.child,
-  });
+  const _HomeShell({required this.location, required this.child});
 
   final String location;
   final Widget child;
@@ -131,12 +124,7 @@ class _HomeShell extends StatelessWidget {
     );
   }
 
-  static const _routes = [
-    '/library',
-    '/vocabulary',
-    '/stats',
-    '/settings',
-  ];
+  static const _routes = ['/library', '/vocabulary', '/stats', '/settings'];
 
   static int _selectedIndex(String location) {
     final index = _routes.indexWhere((route) => location.startsWith(route));

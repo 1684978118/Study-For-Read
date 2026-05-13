@@ -7,10 +7,15 @@ import 'reader_controller.dart';
 import 'reading_text_view.dart';
 
 class ReaderScreen extends StatefulWidget {
-  const ReaderScreen({super.key, this.bookId, ReaderController? controller})
-    : _controller = controller;
+  const ReaderScreen({
+    super.key,
+    this.bookId,
+    this.onClose,
+    ReaderController? controller,
+  }) : _controller = controller;
 
   final String? bookId;
+  final VoidCallback? onClose;
   final ReaderController? _controller;
 
   @override
@@ -55,6 +60,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       return _ReaderContent(
         controller: controller,
         showControls: _showControls,
+        onClose: widget.onClose,
         onToggleControls: () {
           setState(() => _showControls = !_showControls);
         },
@@ -75,6 +81,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           return _ReaderContent(
             controller: _controller!,
             showControls: _showControls,
+            onClose: widget.onClose,
             onToggleControls: () {
               setState(() => _showControls = !_showControls);
             },
@@ -90,11 +97,13 @@ class _ReaderContent extends StatefulWidget {
   const _ReaderContent({
     required this.controller,
     required this.showControls,
+    required this.onClose,
     required this.onToggleControls,
   });
 
   final ReaderController controller;
   final bool showControls;
+  final VoidCallback? onClose;
   final VoidCallback onToggleControls;
 
   @override
@@ -147,7 +156,11 @@ class _ReaderContentState extends State<_ReaderContent> {
                   ),
                 ),
               ),
-              if (widget.showControls) _ReaderControls(controller: controller),
+              if (widget.showControls)
+                _ReaderControls(
+                  controller: controller,
+                  onClose: widget.onClose,
+                ),
             ],
           );
         },
@@ -206,9 +219,10 @@ class _ReaderContentState extends State<_ReaderContent> {
 }
 
 class _ReaderControls extends StatelessWidget {
-  const _ReaderControls({required this.controller});
+  const _ReaderControls({required this.controller, required this.onClose});
 
   final ReaderController controller;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -224,17 +238,29 @@ class _ReaderControls extends StatelessWidget {
           Container(
             width: double.infinity,
             color: surface,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            padding: const EdgeInsets.fromLTRB(4, 8, 16, 10),
+            child: Row(
               children: [
-                Text(
-                  book.title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                IconButton(
+                  key: const Key('reader-close-button'),
+                  tooltip: 'Back to library',
+                  onPressed: onClose,
+                  icon: const Icon(Icons.arrow_back),
                 ),
-                const SizedBox(height: 2),
-                Text(chapter.title),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        book.title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(chapter.title),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

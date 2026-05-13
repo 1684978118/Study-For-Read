@@ -58,6 +58,7 @@ void main() {
     expect(find.text('Study for Read'), findsOneWidget);
     expect(find.text('Create your reading profile.'), findsOneWidget);
     expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    expect(find.text('Sign in instead'), findsOneWidget);
   });
 }
 
