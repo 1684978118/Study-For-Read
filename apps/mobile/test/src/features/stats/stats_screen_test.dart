@@ -40,6 +40,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.loadCount, 1);
+    expect(find.text('Today at a glance'), findsOneWidget);
+    expect(find.text('12 min'), findsOneWidget);
+    expect(find.text('3 lookups'), findsOneWidget);
+    expect(find.text('4 reviewed'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Last 7 days'), findsOneWidget);
     expect(find.text('All time'), findsOneWidget);

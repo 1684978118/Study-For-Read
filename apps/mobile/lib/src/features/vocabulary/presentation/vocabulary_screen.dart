@@ -206,7 +206,7 @@ class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
         tabs: [
           Tab(text: 'Due'),
           Tab(text: 'All'),
-          Tab(text: 'Private Sentences'),
+          Tab(text: 'Private'),
         ],
       ),
     );

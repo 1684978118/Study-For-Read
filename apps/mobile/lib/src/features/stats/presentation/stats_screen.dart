@@ -94,6 +94,8 @@ class _StatsContent extends StatelessWidget {
                 children: [
                   if (controller.errorMessage != null)
                     _InlineError(message: controller.errorMessage!),
+                  _TodayGlance(summary: controller.today),
+                  const SizedBox(height: 20),
                   _SummarySection(title: 'Today', summary: controller.today),
                   const SizedBox(height: 16),
                   _SummarySection(
@@ -111,6 +113,99 @@ class _StatsContent extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _TodayGlance extends StatelessWidget {
+  const _TodayGlance({required this.summary});
+
+  final StudyStatsSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Today at a glance', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _GlanceMetric(
+                icon: Icons.schedule,
+                value: '${summary.readingMinutes} min',
+                label: 'Reading',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _GlanceMetric(
+                icon: Icons.search,
+                value: '${summary.lookupCount} lookups',
+                label: 'Lookup',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _GlanceMetric(
+                icon: Icons.style_outlined,
+                value: '${summary.cardsReviewed} reviewed',
+                label: 'Review',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GlanceMetric extends StatelessWidget {
+  const _GlanceMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      height: 104,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: colorScheme.primary),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

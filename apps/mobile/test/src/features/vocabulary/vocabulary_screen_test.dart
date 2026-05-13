@@ -8,22 +8,23 @@ import 'package:study_for_read_mobile/src/features/vocabulary/presentation/vocab
 import 'package:study_for_read_mobile/src/features/vocabulary/presentation/vocabulary_screen.dart';
 
 void main() {
-  testWidgets('Vocabulary screen has Due, All, and Private Sentences tabs', (
-    tester,
-  ) async {
+  testWidgets('Vocabulary screen has compact mobile tabs', (tester) async {
     await tester.pumpWidget(_app(_controller(cards: [])));
     await tester.pumpAndSettle();
 
     expect(find.text('Due'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
-    expect(find.text('Private Sentences'), findsOneWidget);
+    expect(find.text('Private'), findsOneWidget);
+    expect(find.text('Private Sentences'), findsNothing);
   });
 
   testWidgets('shows loading state while cards load', (tester) async {
-    final controller = _controller(loadCards: () async {
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      return [];
-    });
+    final controller = _controller(
+      loadCards: () async {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        return [];
+      },
+    );
 
     await tester.pumpWidget(_app(controller));
     await tester.pump();
@@ -80,7 +81,7 @@ void main() {
     expect(find.text('心'), findsOneWidget);
     expect(find.text('私だけの文'), findsOneWidget);
 
-    await tester.tap(find.text('Private Sentences'));
+    await tester.tap(find.text('Private'));
     await tester.pumpAndSettle();
 
     expect(find.text('私だけの文'), findsOneWidget);
@@ -203,10 +204,7 @@ LocalWordCard _privateCard({
 }
 
 class _FakeWordCardRepository implements LocalWordCardRepository {
-  const _FakeWordCardRepository({
-    required this.cards,
-    this.loadCards,
-  });
+  const _FakeWordCardRepository({required this.cards, this.loadCards});
 
   final List<LocalWordCard> cards;
   final Future<List<LocalWordCard>> Function()? loadCards;
@@ -234,8 +232,7 @@ class _FakeWordCardRepository implements LocalWordCardRepository {
         .where(
           (card) =>
               card.ownerUserId == ownerUserId &&
-              (card.nextReviewAt == null ||
-                  !card.nextReviewAt!.isAfter(dueAt)),
+              (card.nextReviewAt == null || !card.nextReviewAt!.isAfter(dueAt)),
         )
         .toList(growable: false);
   }
