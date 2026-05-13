@@ -20,8 +20,8 @@ void main() {
     expect(find.text('first chapter text'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Kokoro'), findsNothing);
-    expect(find.text('Previous'), findsNothing);
-    expect(find.text('Next'), findsNothing);
+    expect(find.text('上一章'), findsNothing);
+    expect(find.text('下一章'), findsNothing);
   });
 
   testWidgets('tap blank reading space toggles temporary controls', (
@@ -35,16 +35,16 @@ void main() {
 
     expect(find.text('Kokoro'), findsOneWidget);
     expect(find.text('Chapter 1'), findsOneWidget);
-    expect(find.text('Previous'), findsOneWidget);
-    expect(find.text('Next'), findsOneWidget);
+    expect(find.text('上一章'), findsOneWidget);
+    expect(find.text('下一章'), findsOneWidget);
     expect(find.text('1 / 3'), findsOneWidget);
     expect(find.byKey(const Key('reader-font-size-slider')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('reader-tap-area')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Previous'), findsNothing);
-    expect(find.text('Next'), findsNothing);
+    expect(find.text('上一章'), findsNothing);
+    expect(find.text('下一章'), findsNothing);
   });
 
   testWidgets('reader controls expose a close action', (tester) async {
@@ -90,14 +90,14 @@ void main() {
     await tester.tap(find.byKey(const Key('reader-tap-area')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Next'));
+    await tester.tap(find.text('下一章'));
     await tester.pumpAndSettle();
 
     expect(find.text('second chapter text'), findsOneWidget);
     expect(positionRepository.savedPositions.last.currentChapterIndex, 1);
     expect(positionRepository.savedPositions.last.progressSyncStatus, 'dirty');
 
-    await tester.tap(find.text('Previous'));
+    await tester.tap(find.text('上一章'));
     await tester.pumpAndSettle();
 
     expect(find.text('first chapter text'), findsOneWidget);
@@ -114,17 +114,17 @@ void main() {
     await tester.pumpAndSettle();
 
     final previous = tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Previous'),
+      find.widgetWithText(TextButton, '上一章'),
     );
     expect(previous.onPressed, isNull);
 
-    await tester.tap(find.text('Next'));
+    await tester.tap(find.text('下一章'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Next'));
+    await tester.tap(find.text('下一章'));
     await tester.pumpAndSettle();
 
     final next = tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Next'),
+      find.widgetWithText(TextButton, '下一章'),
     );
     expect(next.onPressed, isNull);
   });
@@ -160,7 +160,7 @@ void main() {
     await tester.pumpWidget(_app(_controller(missingBook: true)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Local book not found'), findsOneWidget);
+    expect(find.text('未找到本地书籍'), findsOneWidget);
     expect(find.text('first chapter text'), findsNothing);
   });
 }

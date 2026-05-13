@@ -96,15 +96,15 @@ class _StatsContent extends StatelessWidget {
                     _InlineError(message: controller.errorMessage!),
                   _TodayGlance(summary: controller.today),
                   const SizedBox(height: 20),
-                  _SummarySection(title: 'Today', summary: controller.today),
+                  _SummarySection(title: '今天', summary: controller.today),
                   const SizedBox(height: 16),
                   _SummarySection(
-                    title: 'Last 7 days',
+                    title: '最近 7 天',
                     summary: controller.last7Days,
                   ),
                   const SizedBox(height: 16),
                   _SummarySection(
-                    title: 'All time',
+                    title: '全部时间',
                     summary: controller.allTime,
                   ),
                 ],
@@ -128,31 +128,31 @@ class _TodayGlance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Today at a glance', style: theme.textTheme.titleMedium),
+        Text('今日概览', style: theme.textTheme.titleMedium),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: _GlanceMetric(
                 icon: Icons.schedule,
-                value: '${summary.readingMinutes} min',
-                label: 'Reading',
+                value: '${summary.readingMinutes} 分钟',
+                label: '阅读',
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _GlanceMetric(
                 icon: Icons.search,
-                value: '${summary.lookupCount} lookups',
-                label: 'Lookup',
+                value: '${summary.lookupCount} 次查词',
+                label: '查词',
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _GlanceMetric(
                 icon: Icons.style_outlined,
-                value: '${summary.cardsReviewed} reviewed',
-                label: 'Review',
+                value: '${summary.cardsReviewed} 次复习',
+                label: '复习',
               ),
             ),
           ],
@@ -218,7 +218,7 @@ class _StatsAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(title: const Text('Stats'));
+    return AppBar(title: const Text('统计'));
   }
 }
 
@@ -232,11 +232,11 @@ class _SummarySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final items = [
-      _Metric('Reading minutes', summary.readingMinutes),
-      _Metric('Lookups', summary.lookupCount),
-      _Metric('Paragraph translations', summary.paragraphTranslationCount),
-      _Metric('Cards created', summary.cardsCreated),
-      _Metric('Cards reviewed', summary.cardsReviewed),
+      _Metric('阅读分钟数', summary.readingMinutes),
+      _Metric('查词次数', summary.lookupCount),
+      _Metric('段落翻译次数', summary.paragraphTranslationCount),
+      _Metric('创建词卡数', summary.cardsCreated),
+      _Metric('复习词卡数', summary.cardsReviewed),
     ];
 
     return Column(

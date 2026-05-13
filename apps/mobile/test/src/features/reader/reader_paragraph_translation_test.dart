@@ -68,7 +68,7 @@ void main() {
       );
       expect(find.text('translated first paragraph'), findsOneWidget);
       expect(find.text('Copy'), findsNothing);
-      expect(find.text('Save'), findsNothing);
+      expect(find.text('保存'), findsNothing);
       expect(find.text('Collapse'), findsNothing);
       expect(find.text('+'), findsNWidgets(2));
     },
@@ -88,7 +88,7 @@ void main() {
       await tester.tap(find.byKey(const Key('paragraph-translate-hotspot-1')));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('offline'), findsOneWidget);
+      expect(find.textContaining('离线'), findsOneWidget);
       expect(find.text('+'), findsNWidgets(2));
     },
   );

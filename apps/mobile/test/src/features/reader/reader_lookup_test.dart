@@ -29,8 +29,8 @@ void main() {
     expect(find.text('heart'), findsOneWidget);
     expect(find.text('heart; mind'), findsOneWidget);
     expect(find.text('word'), findsOneWidget);
-    expect(find.byTooltip('Pronounce'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
+    expect(find.byTooltip('发音'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '保存'), findsOneWidget);
   });
 
   testWidgets('reader lookup sends paragraph context, not full chapter text', (

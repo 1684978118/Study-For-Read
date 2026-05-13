@@ -6,7 +6,7 @@ void main() {
     await tester.pumpWidget(const StudyForReadApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign In'), findsOneWidget);
-    expect(find.text('Create account'), findsOneWidget);
+    expect(find.text('登录'), findsOneWidget);
+    expect(find.text('创建账号'), findsOneWidget);
   });
 }

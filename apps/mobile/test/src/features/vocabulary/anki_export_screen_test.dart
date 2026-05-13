@@ -38,16 +38,16 @@ void main() {
       ),
     );
 
-    expect(find.text('Export to Anki'), findsOneWidget);
-    expect(find.text('All cards'), findsOneWidget);
-    expect(find.text('Due cards'), findsOneWidget);
-    expect(find.text('Private sentence cards'), findsOneWidget);
-    expect(find.text('Include examples'), findsOneWidget);
-    expect(find.text('Include source metadata'), findsOneWidget);
+    expect(find.text('导出到 Anki'), findsOneWidget);
+    expect(find.text('全部词卡'), findsOneWidget);
+    expect(find.text('待复习词卡'), findsOneWidget);
+    expect(find.text('私密例句卡'), findsOneWidget);
+    expect(find.text('包含例句'), findsOneWidget);
+    expect(find.text('包含来源元数据'), findsOneWidget);
 
-    await tester.tap(find.text('Due cards'));
-    await tester.tap(find.text('Include examples'));
-    await tester.tap(find.text('Export UTF-8 TXT'));
+    await tester.tap(find.text('待复习词卡'));
+    await tester.tap(find.text('包含例句'));
+    await tester.tap(find.text('导出 UTF-8 TXT'));
     await tester.pumpAndSettle();
 
     expect(service.lastOptions?.scope, AnkiExportScope.dueCards);
@@ -55,7 +55,7 @@ void main() {
     expect(service.lastCards, isNotEmpty);
     expect(service.lastCards.single.id, 'card-1');
     expect(service.lastCards.single.front, 'local vocabulary card');
-    expect(find.text('Export ready'), findsOneWidget);
+    expect(find.text('导出已准备好'), findsOneWidget);
     expect(find.text('StudyForRead-Anki.txt'), findsOneWidget);
     expect(find.textContaining('#separator:Tab'), findsNothing);
     expect(find.textContaining('card-1\tfront'), findsNothing);
@@ -95,19 +95,19 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Export UTF-8 TXT'));
+    await tester.tap(find.text('导出 UTF-8 TXT'));
     await tester.pumpAndSettle();
     expect(service.lastOptions?.scope, AnkiExportScope.allCards);
     expect(service.lastCards.map((card) => card.id), ['all-card']);
 
-    await tester.tap(find.text('Due cards'));
-    await tester.tap(find.text('Export UTF-8 TXT'));
+    await tester.tap(find.text('待复习词卡'));
+    await tester.tap(find.text('导出 UTF-8 TXT'));
     await tester.pumpAndSettle();
     expect(service.lastOptions?.scope, AnkiExportScope.dueCards);
     expect(service.lastCards.map((card) => card.id), ['due-card']);
 
-    await tester.tap(find.text('Private sentence cards'));
-    await tester.tap(find.text('Export UTF-8 TXT'));
+    await tester.tap(find.text('私密例句卡'));
+    await tester.tap(find.text('导出 UTF-8 TXT'));
     await tester.pumpAndSettle();
     expect(service.lastOptions?.scope, AnkiExportScope.privateSentenceCards);
     expect(service.lastCards.map((card) => card.id), ['private-card']);
@@ -116,7 +116,7 @@ void main() {
   testWidgets('Vocabulary screen exposes Anki export entry', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: VocabularyScreen()));
 
-    expect(find.text('Export'), findsOneWidget);
+    expect(find.text('导出'), findsOneWidget);
   });
 
   testWidgets('Vocabulary export uses currently loaded local cards', (
@@ -149,9 +149,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Export'));
+    await tester.tap(find.text('导出'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Export UTF-8 TXT'));
+    await tester.tap(find.text('导出 UTF-8 TXT'));
     await tester.pumpAndSettle();
 
     expect(service.lastCards, isNotEmpty);

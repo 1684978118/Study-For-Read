@@ -67,7 +67,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Could not open local library.'),
+                  const Text('无法打开本地书库。'),
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () {
@@ -75,7 +75,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         _controllerFuture = _createLocalController();
                       });
                     },
-                    child: const Text('Try again'),
+                    child: const Text('重试'),
                   ),
                 ],
               ),
@@ -85,7 +85,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
         return const Scaffold(
           appBar: _LibraryAppBar(),
-          body: Center(child: Text('Loading library...')),
+          body: Center(child: Text('正在加载书库...')),
         );
       },
     );
@@ -156,7 +156,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(title: const Text('Library'));
+    return AppBar(title: const Text('书库'));
   }
 }
 
@@ -183,13 +183,13 @@ class _EmptyLibrary extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'No local books yet',
+                '还没有本地书籍',
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               const Text(
-                'Books stay on this device and remain available offline.',
+                '书籍只保存在这台设备上，离线也可以阅读。',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -201,7 +201,7 @@ class _EmptyLibrary extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.upload_file),
-                label: const Text('Import TXT or EPUB'),
+                label: const Text('导入 TXT 或 EPUB'),
               ),
             ],
           ),
@@ -223,14 +223,14 @@ class _ImportToolbar extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'Local library',
+            '本地书库',
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         FilledButton.icon(
           onPressed: isImporting ? null : onImport,
           icon: const Icon(Icons.upload_file),
-          label: const Text('Import TXT or EPUB'),
+          label: const Text('导入 TXT 或 EPUB'),
         ),
       ],
     );
@@ -268,10 +268,10 @@ class _BookListItem extends StatelessWidget {
 
   static String _syncStatusLabel(String status) {
     return switch (status) {
-      'synced' => 'Synced',
-      'dirty' => 'Pending sync',
-      'failed' => 'Sync failed',
-      _ => 'Local only',
+      'synced' => '已同步',
+      'dirty' => '待同步',
+      'failed' => '同步失败',
+      _ => '仅本地',
     };
   }
 }

@@ -33,7 +33,7 @@ class LookupState {
   const LookupState.offline()
     : this._(
         status: LookupStatus.offline,
-        message: 'Lookup is unavailable offline.',
+        message: '离线状态下暂时无法查词。',
       );
 
   const LookupState.error(String message)
@@ -95,7 +95,7 @@ class LookupController extends ChangeNotifier {
   Future<void> lookup(ReaderTextSelection selection, {DateTime? now}) async {
     final selectedText = selection.selectedText.trim();
     if (selectedText.isEmpty) {
-      state = const LookupState.notFound('No text selected.');
+      state = const LookupState.notFound('没有选择文本。');
       notifyListeners();
       return;
     }
@@ -120,7 +120,7 @@ class LookupController extends ChangeNotifier {
     } on DioException catch (error) {
       state = _stateFromDioError(error);
     } catch (_) {
-      state = const LookupState.error('Lookup failed.');
+      state = const LookupState.error('查词失败。');
     }
     notifyListeners();
   }
@@ -171,7 +171,7 @@ class LookupController extends ChangeNotifier {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.receiveTimeout ||
       DioExceptionType.sendTimeout => const LookupState.offline(),
-      _ => const LookupState.error('Lookup failed.'),
+      _ => const LookupState.error('查词失败。'),
     };
   }
 }

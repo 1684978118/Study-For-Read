@@ -32,8 +32,8 @@ class LookupBottomSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: switch (state.status) {
               LookupStatus.loading => const _LookupMessage(
-                title: 'Looking up...',
-                body: 'Searching the study dictionary.',
+                title: '正在查词...',
+                body: '正在查询学习词典。',
               ),
               LookupStatus.success => _LookupResultView(
                 state: state,
@@ -43,20 +43,20 @@ class LookupBottomSheet extends StatelessWidget {
                 onSave: onSave,
               ),
               LookupStatus.notFound => _LookupMessage(
-                title: 'Not found',
-                body: state.message ?? 'No matching entry was found.',
+                title: '未找到',
+                body: state.message ?? '没有找到匹配词条。',
               ),
               LookupStatus.offline => _LookupMessage(
-                title: 'Offline',
-                body: state.message ?? 'Lookup is unavailable offline.',
+                title: '离线',
+                body: state.message ?? '离线状态下暂时无法查词。',
               ),
               LookupStatus.error => _LookupMessage(
-                title: 'Lookup unavailable',
-                body: state.message ?? 'Lookup failed.',
+                title: '查词不可用',
+                body: state.message ?? '查词失败。',
               ),
               LookupStatus.idle => const _LookupMessage(
-                title: 'Lookup',
-                body: 'Select text to look up.',
+                title: '查词',
+                body: '选择文本后可以查词。',
               ),
             },
           );
@@ -113,7 +113,7 @@ class _LookupResultView extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Pronounce',
+              tooltip: '发音',
               onPressed: () {},
               icon: const Icon(Icons.volume_up_outlined),
             ),
@@ -168,7 +168,7 @@ class _SaveButtonState extends State<_SaveButton> {
         width: double.infinity,
         child: FilledButton(
           onPressed: widget.onSave,
-          child: const Text('Save'),
+          child: const Text('保存'),
         ),
       );
     }
@@ -199,12 +199,12 @@ class _SaveButtonState extends State<_SaveButton> {
 
   String _labelFor(SaveVocabularyState state) {
     return switch (state.status) {
-      SaveVocabularyStatus.saving => 'Saving...',
+      SaveVocabularyStatus.saving => '正在保存...',
       SaveVocabularyStatus.saved ||
       SaveVocabularyStatus.localOnly ||
-      SaveVocabularyStatus.alreadySaved => 'Saved',
-      SaveVocabularyStatus.error => 'Retry',
-      SaveVocabularyStatus.idle => 'Save',
+      SaveVocabularyStatus.alreadySaved => '已保存',
+      SaveVocabularyStatus.error => '重试',
+      SaveVocabularyStatus.idle => '保存',
     };
   }
 }

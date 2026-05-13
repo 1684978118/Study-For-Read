@@ -74,7 +74,7 @@ class StatsController extends ChangeNotifier {
       );
       _allTime = await repository.summaryForAllTime(ownerUserId: _ownerUserId);
     } catch (_) {
-      _errorMessage = 'Could not load study stats.';
+      _errorMessage = '无法加载学习统计。';
     } finally {
       _isLoading = false;
       notifyListeners();

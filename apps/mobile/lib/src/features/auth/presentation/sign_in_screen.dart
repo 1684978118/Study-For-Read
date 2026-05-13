@@ -40,15 +40,15 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthFormShell(
-      title: 'Sign In',
-      subtitle: 'Read offline. Learn as you go.',
+      title: '登录',
+      subtitle: '离线阅读，边读边学。',
       children: [
         TextField(
           key: const Key('sign-in-email-field'),
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: authInputDecoration(
-            labelText: 'Email',
+            labelText: '邮箱',
             icon: Icons.alternate_email,
           ),
         ),
@@ -58,7 +58,7 @@ class _SignInScreenState extends State<SignInScreen> {
           controller: _passwordController,
           obscureText: true,
           decoration: authInputDecoration(
-            labelText: 'Password',
+            labelText: '密码',
             icon: Icons.lock_outline,
           ),
         ),
@@ -74,12 +74,12 @@ class _SignInScreenState extends State<SignInScreen> {
           key: const Key('sign-in-submit-button'),
           style: authPrimaryButtonStyle(),
           onPressed: _isSubmitting ? null : _submit,
-          child: Text(_isSubmitting ? 'Signing in...' : 'Continue'),
+          child: Text(_isSubmitting ? '正在登录...' : '继续'),
         ),
         const SizedBox(height: 8),
         TextButton(
           onPressed: _isSubmitting ? null : () => context.go('/register'),
-          child: const Text('Create account'),
+          child: const Text('创建账号'),
         ),
       ],
     );
@@ -106,7 +106,7 @@ class _SignInScreenState extends State<SignInScreen> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _errorMessage = 'Sign in failed');
+        setState(() => _errorMessage = '登录失败');
       }
     } finally {
       if (mounted) {

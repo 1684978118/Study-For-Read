@@ -18,7 +18,7 @@ void main() {
     );
 
     expect(find.text('Study for Read'), findsOneWidget);
-    expect(find.text('Read offline. Learn as you go.'), findsOneWidget);
+    expect(find.text('离线阅读，边读边学。'), findsOneWidget);
     expect(find.byIcon(Icons.alternate_email), findsOneWidget);
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
   });
@@ -56,9 +56,9 @@ void main() {
     );
 
     expect(find.text('Study for Read'), findsOneWidget);
-    expect(find.text('Create your reading profile.'), findsOneWidget);
+    expect(find.text('创建你的阅读档案。'), findsOneWidget);
     expect(find.byIcon(Icons.person_outline), findsOneWidget);
-    expect(find.text('Sign in instead'), findsOneWidget);
+    expect(find.text('已有账号，去登录'), findsOneWidget);
   });
 }
 

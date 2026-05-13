@@ -33,25 +33,25 @@ class _AnkiExportScreenState extends State<AnkiExportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Export to Anki')),
+      appBar: AppBar(title: const Text('导出到 Anki')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Export range', style: Theme.of(context).textTheme.titleMedium),
+          Text('导出范围', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           SegmentedButton<AnkiExportScope>(
             segments: const [
               ButtonSegment(
                 value: AnkiExportScope.allCards,
-                label: Text('All cards'),
+                label: Text('全部词卡'),
               ),
               ButtonSegment(
                 value: AnkiExportScope.dueCards,
-                label: Text('Due cards'),
+                label: Text('待复习词卡'),
               ),
               ButtonSegment(
                 value: AnkiExportScope.privateSentenceCards,
-                label: Text('Private sentence cards'),
+                label: Text('私密例句卡'),
               ),
             ],
             selected: {_scope},
@@ -61,19 +61,19 @@ class _AnkiExportScreenState extends State<AnkiExportScreen> {
           SwitchListTile(
             value: _includeExamples,
             onChanged: (value) => setState(() => _includeExamples = value),
-            title: const Text('Include examples'),
+            title: const Text('包含例句'),
           ),
           SwitchListTile(
             value: _includeSourceMetadata,
             onChanged: (value) =>
                 setState(() => _includeSourceMetadata = value),
-            title: const Text('Include source metadata'),
+            title: const Text('包含来源元数据'),
           ),
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: _export,
             icon: const Icon(Icons.file_download_outlined),
-            label: const Text('Export UTF-8 TXT'),
+            label: const Text('导出 UTF-8 TXT'),
           ),
           if (_isComplete) ...[
             const SizedBox(height: 20),
@@ -124,7 +124,7 @@ class _ExportCompleteMessage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Export ready'),
+            Text('导出已准备好'),
             SizedBox(height: 4),
             Text('StudyForRead-Anki.txt'),
           ],

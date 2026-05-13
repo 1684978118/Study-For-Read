@@ -58,7 +58,7 @@ class ParagraphTranslationState {
   const ParagraphTranslationState.offline()
     : this._(
         status: ParagraphTranslationStatus.offline,
-        message: 'Paragraph translation is unavailable offline.',
+        message: '离线状态下暂时无法翻译段落。',
       );
 
   const ParagraphTranslationState.error(String message)
@@ -129,7 +129,7 @@ class ParagraphTranslationController extends ChangeNotifier {
     if (selectedParagraph.isEmpty) {
       _setState(
         selection,
-        const ParagraphTranslationState.error('No paragraph selected.'),
+        const ParagraphTranslationState.error('没有选择段落。'),
       );
       return;
     }
@@ -182,7 +182,7 @@ class ParagraphTranslationController extends ChangeNotifier {
     } catch (_) {
       _setState(
         selection,
-        const ParagraphTranslationState.error('Paragraph translation failed.'),
+        const ParagraphTranslationState.error('段落翻译失败。'),
       );
     }
   }
@@ -240,7 +240,7 @@ class ParagraphTranslationController extends ChangeNotifier {
       DioExceptionType.receiveTimeout ||
       DioExceptionType.sendTimeout => const ParagraphTranslationState.offline(),
       _ => const ParagraphTranslationState.error(
-        'Paragraph translation failed.',
+        '段落翻译失败。',
       ),
     };
   }

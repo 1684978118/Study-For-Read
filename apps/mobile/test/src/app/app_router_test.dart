@@ -7,27 +7,27 @@ void main() {
     await tester.pumpWidget(const StudyForReadApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign In'), findsOneWidget);
-    expect(find.text('Library'), findsNothing);
+    expect(find.text('登录'), findsOneWidget);
+    expect(find.text('书库'), findsNothing);
   });
 
   testWidgets('Sign In can navigate to Register', (tester) async {
     await tester.pumpWidget(const StudyForReadApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Create account'));
+    await tester.tap(find.text('创建账号'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Register'), findsOneWidget);
-    expect(find.text('Sign In'), findsNothing);
+    expect(find.text('注册'), findsOneWidget);
+    expect(find.text('登录'), findsNothing);
   });
 
   testWidgets('signed-out users cannot open Library directly', (tester) async {
     await tester.pumpWidget(const StudyForReadApp(initialLocation: '/library'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign In'), findsOneWidget);
-    expect(find.text('Library'), findsNothing);
+    expect(find.text('登录'), findsOneWidget);
+    expect(find.text('书库'), findsNothing);
   });
 
   testWidgets('signed-in shell shows the four bottom navigation tabs', (
@@ -39,10 +39,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
-    expect(find.text('Library'), findsWidgets);
-    expect(find.text('Vocabulary'), findsWidgets);
-    expect(find.text('Stats'), findsWidgets);
-    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('书库'), findsWidgets);
+    expect(find.text('词卡'), findsWidgets);
+    expect(find.text('统计'), findsWidgets);
+    expect(find.text('设置'), findsWidgets);
   });
 
   testWidgets('Reader is a standalone full-screen route outside bottom nav', (
@@ -53,7 +53,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Reader'), findsOneWidget);
+    expect(find.text('阅读器'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
   });
 }

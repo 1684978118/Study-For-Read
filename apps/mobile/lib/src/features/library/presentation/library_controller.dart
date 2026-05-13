@@ -87,7 +87,7 @@ class LibraryController extends ChangeNotifier {
     try {
       _books = await _bookRepository.findByOwnerUserId(_ownerUserId);
     } catch (_) {
-      _errorMessage = 'Could not load local books.';
+      _errorMessage = '无法加载本地书籍。';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -110,7 +110,7 @@ class LibraryController extends ChangeNotifier {
       );
       _books = await _bookRepository.findByOwnerUserId(_ownerUserId);
     } catch (_) {
-      _errorMessage = 'Import failed. Please try another TXT or EPUB file.';
+      _errorMessage = '导入失败，请换一个 TXT 或 EPUB 文件重试。';
     } finally {
       _isImporting = false;
       notifyListeners();

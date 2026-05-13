@@ -40,11 +40,11 @@ class SaveVocabularyState {
   const SaveVocabularyState.localOnly()
     : this._(
         status: SaveVocabularyStatus.localOnly,
-        message: 'Saved locally. It will sync later.',
+        message: '已保存到本地，稍后会同步。',
       );
 
   const SaveVocabularyState.alreadySaved()
-    : this._(status: SaveVocabularyStatus.alreadySaved, message: 'Saved');
+    : this._(status: SaveVocabularyStatus.alreadySaved, message: '已保存');
 
   const SaveVocabularyState.error(String message)
     : this._(status: SaveVocabularyStatus.error, message: message);

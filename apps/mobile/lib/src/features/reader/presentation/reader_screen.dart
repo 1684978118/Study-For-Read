@@ -87,7 +87,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             },
           );
         }
-        return const Scaffold(body: Center(child: Text('Loading reader...')));
+        return const Scaffold(body: Center(child: Text('正在打开阅读器...')));
       },
     );
   }
@@ -119,7 +119,7 @@ class _ReaderContentState extends State<_ReaderContent> {
         animation: controller,
         builder: (context, _) {
           if (controller.isLoading) {
-            return const Center(child: Text('Loading reader...'));
+            return const Center(child: Text('正在打开阅读器...'));
           }
           if (controller.notFound || controller.currentChapter == null) {
             return const _ReaderNotFound();
@@ -243,7 +243,7 @@ class _ReaderControls extends StatelessWidget {
               children: [
                 IconButton(
                   key: const Key('reader-close-button'),
-                  tooltip: 'Back to library',
+                  tooltip: '返回书库',
                   onPressed: onClose,
                   icon: const Icon(Icons.arrow_back),
                 ),
@@ -277,7 +277,7 @@ class _ReaderControls extends StatelessWidget {
                       onPressed: controller.canGoPrevious
                           ? controller.previousChapter
                           : null,
-                      child: const Text('Previous'),
+                      child: const Text('上一章'),
                     ),
                     Expanded(
                       child: Center(child: Text(controller.progressLabel)),
@@ -286,7 +286,7 @@ class _ReaderControls extends StatelessWidget {
                       onPressed: controller.canGoNext
                           ? controller.nextChapter
                           : null,
-                      child: const Text('Next'),
+                      child: const Text('下一章'),
                     ),
                   ],
                 ),
@@ -319,9 +319,9 @@ class _ReaderNotFound extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Reader'),
+              Text('阅读器'),
               SizedBox(height: 8),
-              Text('Local book not found'),
+              Text('未找到本地书籍'),
             ],
           ),
         ),

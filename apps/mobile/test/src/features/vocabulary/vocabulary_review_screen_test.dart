@@ -47,18 +47,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Known'), findsOneWidget);
-    expect(find.text('Unknown'), findsOneWidget);
-    expect(find.text('new - 0 reviews'), findsOneWidget);
+    expect(find.text('认识'), findsOneWidget);
+    expect(find.text('不认识'), findsOneWidget);
+    expect(find.text('新卡 - 已复习 0 次'), findsOneWidget);
 
-    await tester.tap(find.text('Known'));
+    await tester.tap(find.text('认识'));
     await tester.pumpAndSettle();
 
-    expect(find.text('No cards due now'), findsOneWidget);
-    await tester.tap(find.text('All'));
+    expect(find.text('现在没有待复习词卡'), findsOneWidget);
+    await tester.tap(find.text('全部'));
     await tester.pumpAndSettle();
 
-    expect(find.text('learning - 1 reviews'), findsOneWidget);
+    expect(find.text('学习中 - 已复习 1 次'), findsOneWidget);
     expect(pendingRepository.events.single.eventType, 'word_card_review');
   });
 }

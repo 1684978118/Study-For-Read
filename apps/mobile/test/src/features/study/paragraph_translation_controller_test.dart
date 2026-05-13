@@ -116,7 +116,7 @@ void main() {
       );
 
       expect(controller.state.status, ParagraphTranslationStatus.offline);
-      expect(controller.state.message, contains('offline'));
+      expect(controller.state.message, contains('离线'));
     },
   );
 }

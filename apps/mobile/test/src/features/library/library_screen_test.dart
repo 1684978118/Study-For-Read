@@ -22,10 +22,10 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    expect(find.text('No local books yet'), findsOneWidget);
-    expect(find.text('Import TXT or EPUB'), findsOneWidget);
+    expect(find.text('还没有本地书籍'), findsOneWidget);
+    expect(find.text('导入 TXT 或 EPUB'), findsOneWidget);
     expect(
-      find.text('Books stay on this device and remain available offline.'),
+      find.text('书籍只保存在这台设备上，离线也可以阅读。'),
       findsOneWidget,
     );
   });
@@ -56,9 +56,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Could not open local library.'), findsOneWidget);
-    expect(find.text('Try again'), findsOneWidget);
-    expect(find.text('Loading library...'), findsNothing);
+    expect(find.text('无法打开本地书库。'), findsOneWidget);
+    expect(find.text('重试'), findsOneWidget);
+    expect(find.text('正在加载书库...'), findsNothing);
   });
 
   testWidgets('import uses picker and import service then refreshes list', (
@@ -80,7 +80,7 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Import TXT or EPUB'));
+    await tester.tap(find.text('导入 TXT 或 EPUB'));
     await tester.pumpAndSettle();
 
     expect(picker.pickCount, 1);
@@ -99,11 +99,11 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Import TXT or EPUB'));
+    await tester.tap(find.text('导入 TXT 或 EPUB'));
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Import failed. Please try another TXT or EPUB file.'),
+      find.text('导入失败，请换一个 TXT 或 EPUB 文件重试。'),
       findsOneWidget,
     );
   });
@@ -126,7 +126,7 @@ void main() {
     expect(find.text('雪国'), findsOneWidget);
     expect(find.text('川端康成'), findsOneWidget);
     expect(find.text('EPUB'), findsOneWidget);
-    expect(find.text('Pending sync'), findsOneWidget);
+    expect(find.text('待同步'), findsOneWidget);
     expect(find.textContaining('D:/private/books'), findsNothing);
     expect(find.textContaining('secret.epub'), findsNothing);
   });

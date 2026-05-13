@@ -94,7 +94,7 @@ class VocabularyController extends ChangeNotifier {
       _allCards = await _toViews(all);
       _privateSentenceCards = await _toViews(privateSentences);
     } catch (_) {
-      _errorMessage = 'Could not load vocabulary cards.';
+      _errorMessage = '无法加载词卡。';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -114,7 +114,7 @@ class VocabularyController extends ChangeNotifier {
       return VocabularyCardView(
         id: card.id,
         cardType: card.cardType,
-        surface: card.privateSurface ?? 'Private sentence',
+        surface: card.privateSurface ?? '私密例句',
         definition: card.privateDefinition ?? '',
         privateContext: card.privateContext,
         reviewStatus: card.reviewStatus,
@@ -128,9 +128,9 @@ class VocabularyController extends ChangeNotifier {
     return VocabularyCardView(
       id: card.id,
       cardType: card.cardType,
-      surface: lexeme?.surface ?? card.lexemeId ?? 'Unknown lexeme',
+      surface: lexeme?.surface ?? card.lexemeId ?? '未知词条',
       reading: lexeme?.reading,
-      definition: lexeme?.definition ?? 'Definition unavailable offline',
+      definition: lexeme?.definition ?? '离线状态下无法显示释义',
       reviewStatus: card.reviewStatus,
       reviewCount: card.reviewCount,
       nextReviewAt: card.nextReviewAt,

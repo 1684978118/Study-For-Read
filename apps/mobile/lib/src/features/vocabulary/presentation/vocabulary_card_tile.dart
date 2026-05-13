@@ -52,12 +52,12 @@ class VocabularyCardTile extends StatelessWidget {
                 children: [
                   OutlinedButton(
                     onPressed: () => onUnknown!(card.id),
-                    child: const Text('Unknown'),
+                    child: const Text('不认识'),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
                     onPressed: () => onKnown!(card.id),
-                    child: const Text('Known'),
+                    child: const Text('认识'),
                   ),
                 ],
               ),
@@ -69,28 +69,34 @@ class VocabularyCardTile extends StatelessWidget {
   }
 
   String _typeLabel(String cardType) {
-    return cardType == 'private_sentence' ? 'Private sentence' : 'Lexeme';
+    return cardType == 'private_sentence' ? '私密例句' : '词条';
   }
 
   String _reviewLabel(String reviewStatus, int reviewCount) {
-    return '$reviewStatus - $reviewCount reviews';
+    final label = switch (reviewStatus) {
+      'new' => '新卡',
+      'learning' => '学习中',
+      'known' => '已掌握',
+      _ => reviewStatus,
+    };
+    return '$label - 已复习 $reviewCount 次';
   }
 
   String _nextReviewLabel(DateTime? nextReviewAt) {
     if (nextReviewAt == null) {
-      return 'Due now';
+      return '现在可复习';
     }
     final local = nextReviewAt.toLocal();
     final date = local.toIso8601String().split('T').first;
-    return 'Next review $date';
+    return '下次复习 $date';
   }
 
   String _syncLabel(String syncStatus) {
     return switch (syncStatus) {
-      'synced' => 'Synced',
-      'dirty' => 'Pending sync',
-      'failed' => 'Sync failed',
-      _ => 'Local only',
+      'synced' => '已同步',
+      'dirty' => '待同步',
+      'failed' => '同步失败',
+      _ => '仅本地',
     };
   }
 }

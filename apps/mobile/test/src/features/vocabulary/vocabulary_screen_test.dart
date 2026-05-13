@@ -12,9 +12,9 @@ void main() {
     await tester.pumpWidget(_app(_controller(cards: [])));
     await tester.pumpAndSettle();
 
-    expect(find.text('Due'), findsOneWidget);
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('Private'), findsOneWidget);
+    expect(find.text('待复习'), findsOneWidget);
+    expect(find.text('全部'), findsOneWidget);
+    expect(find.text('私密'), findsOneWidget);
     expect(find.text('Private Sentences'), findsNothing);
   });
 
@@ -75,13 +75,13 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('All'));
+    await tester.tap(find.text('全部'));
     await tester.pumpAndSettle();
 
     expect(find.text('心'), findsOneWidget);
     expect(find.text('私だけの文'), findsOneWidget);
 
-    await tester.tap(find.text('Private'));
+    await tester.tap(find.text('私密'));
     await tester.pumpAndSettle();
 
     expect(find.text('私だけの文'), findsOneWidget);
@@ -97,12 +97,12 @@ void main() {
     await tester.pumpWidget(_app(_controller(cards: [])));
     await tester.pumpAndSettle();
 
-    expect(find.text('No cards due now'), findsOneWidget);
+    expect(find.text('现在没有待复习词卡'), findsOneWidget);
 
-    await tester.tap(find.text('All'));
+    await tester.tap(find.text('全部'));
     await tester.pumpAndSettle();
 
-    expect(find.text('No vocabulary cards yet'), findsOneWidget);
+    expect(find.text('还没有词卡'), findsOneWidget);
   });
 }
 

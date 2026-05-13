@@ -10,29 +10,29 @@ void main() {
     await tester.pumpWidget(_app(const SettingsScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Account & languages'), findsOneWidget);
-    expect(find.text('Japanese to Chinese'), findsOneWidget);
-    expect(find.text('Reading preferences'), findsOneWidget);
-    expect(find.text('Font size adjustable in Reader'), findsOneWidget);
-    expect(find.text('Sync & privacy'), findsOneWidget);
-    expect(find.text('Local books stay on this device'), findsOneWidget);
-    expect(find.text('Sync sends metadata only'), findsOneWidget);
+    expect(find.text('设置'), findsOneWidget);
+    expect(find.text('账号与语言'), findsOneWidget);
+    expect(find.text('日语到中文'), findsOneWidget);
+    expect(find.text('阅读偏好'), findsOneWidget);
+    expect(find.text('阅读器内可调字体大小'), findsOneWidget);
+    expect(find.text('同步与隐私'), findsOneWidget);
+    expect(find.text('本地书籍只保存在这台设备上'), findsOneWidget);
+    expect(find.text('同步只发送元数据'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Export to Anki'),
+      find.text('导出到 Anki'),
       180,
       scrollable: find.byType(Scrollable),
     );
-    expect(find.text('Export to Anki'), findsOneWidget);
+    expect(find.text('导出到 Anki'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Sign out'),
+      find.text('退出登录'),
       180,
       scrollable: find.byType(Scrollable),
     );
-    expect(find.text('Sign out'), findsOneWidget);
-    expect(find.text('Available after auth wiring'), findsOneWidget);
+    expect(find.text('退出登录'), findsOneWidget);
+    expect(find.text('认证流程接入后可用'), findsOneWidget);
   });
 
   testWidgets('Settings export entry opens Anki export screen', (tester) async {
@@ -40,15 +40,17 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Export to Anki'),
+      find.text('导出到 Anki'),
       180,
       scrollable: find.byType(Scrollable),
     );
-    await tester.tap(find.text('Export to Anki'));
+    await tester.ensureVisible(find.widgetWithText(ListTile, '导出到 Anki'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, '导出到 Anki'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AnkiExportScreen), findsOneWidget);
-    expect(find.text('Export range'), findsOneWidget);
+    expect(find.text('导出范围'), findsOneWidget);
   });
 
   testWidgets('Settings sign out placeholder is disabled', (tester) async {
@@ -56,12 +58,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Sign out'),
+      find.text('退出登录'),
       180,
       scrollable: find.byType(Scrollable),
     );
     final signOutTile = tester.widget<ListTile>(
-      find.widgetWithText(ListTile, 'Sign out'),
+      find.widgetWithText(ListTile, '退出登录'),
     );
 
     expect(signOutTile.enabled, isFalse);

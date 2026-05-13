@@ -100,7 +100,7 @@ void main() {
       expect(find.byType(LookupBottomSheet), findsOneWidget);
       expect(find.text('心'), findsWidgets);
       expect(find.text('こころ'), findsOneWidget);
-      expect(find.byTooltip('Pronounce'), findsOneWidget);
+      expect(find.byTooltip('发音'), findsOneWidget);
       expect(http.lookupTexts, ['心']);
       expect(http.lookupContexts.single, '先生の心。');
       expect(http.lookupContexts.single, isNot(contains('今日は静かです')));
@@ -145,7 +145,7 @@ void main() {
       expect(http.translatedParagraphTexts.single, isNot(contains('先生の心')));
       expect(find.text('今天很安静。'), findsOneWidget);
       expect(find.text('Copy'), findsNothing);
-      expect(find.text('Save'), findsNothing);
+      expect(find.text('保存'), findsNothing);
       expect(find.text('Collapse'), findsNothing);
       expect(find.text('+'), findsNWidgets(2));
       expect(translationCacheRepository.entries, hasLength(1));
@@ -205,13 +205,13 @@ void main() {
       );
       await _pumpUntil(
         tester,
-        () => find.text('Lookups').evaluate().isNotEmpty,
+        () => find.text('查词次数').evaluate().isNotEmpty,
       );
 
-      expect(find.text('Lookups'), findsWidgets);
-      expect(find.text('Paragraph translations'), findsWidgets);
-      expect(find.text('Cards created'), findsWidgets);
-      expect(find.text('Cards reviewed'), findsWidgets);
+      expect(find.text('查词次数'), findsWidgets);
+      expect(find.text('段落翻译次数'), findsWidgets);
+      expect(find.text('创建词卡数'), findsWidgets);
+      expect(find.text('复习词卡数'), findsWidgets);
       expect(statsController.allTime.lookupCount, 1);
       expect(statsController.allTime.paragraphTranslationCount, 1);
       expect(statsController.allTime.cardsCreated, greaterThanOrEqualTo(1));

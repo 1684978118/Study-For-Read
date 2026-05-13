@@ -82,7 +82,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
           length: 3,
           child: Scaffold(
             appBar: _VocabularyAppBar(),
-            body: Center(child: Text('Loading vocabulary...')),
+            body: Center(child: Text('正在加载词卡...')),
           ),
         );
       },
@@ -127,8 +127,8 @@ class _VocabularyContent extends StatelessWidget {
                   children: [
                     _VocabularyList(
                       cards: controller.dueCards,
-                      emptyTitle: 'No cards due now',
-                      emptyBody: 'New and scheduled cards will appear here.',
+                      emptyTitle: '现在没有待复习词卡',
+                      emptyBody: '新词卡和计划复习的词卡会出现在这里。',
                       errorMessage: controller.errorMessage,
                       onRefresh: controller.load,
                       reviewController: reviewController,
@@ -136,9 +136,9 @@ class _VocabularyContent extends StatelessWidget {
                     ),
                     _VocabularyList(
                       cards: controller.allCards,
-                      emptyTitle: 'No vocabulary cards yet',
+                      emptyTitle: '还没有词卡',
                       emptyBody:
-                          'Saved lookup cards will stay available offline.',
+                          '保存的查词卡会离线保存在这里。',
                       errorMessage: controller.errorMessage,
                       onRefresh: controller.load,
                       reviewController: reviewController,
@@ -146,9 +146,9 @@ class _VocabularyContent extends StatelessWidget {
                     ),
                     _VocabularyList(
                       cards: controller.privateSentenceCards,
-                      emptyTitle: 'No private sentence cards yet',
+                      emptyTitle: '还没有私密例句卡',
                       emptyBody:
-                          'Private sentence cards are shown only for you.',
+                          '私密例句卡只会显示给你自己。',
                       errorMessage: controller.errorMessage,
                       onRefresh: controller.load,
                       reviewController: reviewController,
@@ -185,7 +185,7 @@ class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: const Text('Vocabulary'),
+      title: const Text('词卡'),
       actions: [
         TextButton.icon(
           onPressed: () => Navigator.of(context).push(
@@ -199,14 +199,14 @@ class _VocabularyAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           icon: const Icon(Icons.file_download_outlined),
-          label: const Text('Export'),
+          label: const Text('导出'),
         ),
       ],
       bottom: const TabBar(
         tabs: [
-          Tab(text: 'Due'),
-          Tab(text: 'All'),
-          Tab(text: 'Private'),
+          Tab(text: '待复习'),
+          Tab(text: '全部'),
+          Tab(text: '私密'),
         ],
       ),
     );

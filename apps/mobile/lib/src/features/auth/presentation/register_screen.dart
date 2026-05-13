@@ -42,15 +42,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthFormShell(
-      title: 'Register',
-      subtitle: 'Create your reading profile.',
+      title: '注册',
+      subtitle: '创建你的阅读档案。',
       children: [
         TextField(
           key: const Key('register-email-field'),
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: authInputDecoration(
-            labelText: 'Email',
+            labelText: '邮箱',
             icon: Icons.alternate_email,
           ),
         ),
@@ -59,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           key: const Key('register-display-name-field'),
           controller: _displayNameController,
           decoration: authInputDecoration(
-            labelText: 'Display name',
+            labelText: '显示名称',
             icon: Icons.person_outline,
           ),
         ),
@@ -69,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _passwordController,
           obscureText: true,
           decoration: authInputDecoration(
-            labelText: 'Password',
+            labelText: '密码',
             icon: Icons.lock_outline,
           ),
         ),
@@ -85,12 +85,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           key: const Key('register-submit-button'),
           style: authPrimaryButtonStyle(),
           onPressed: _isSubmitting ? null : _submit,
-          child: Text(_isSubmitting ? 'Creating...' : 'Create profile'),
+          child: Text(_isSubmitting ? '正在创建...' : '创建档案'),
         ),
         const SizedBox(height: 8),
         TextButton(
           onPressed: _isSubmitting ? null : () => context.go('/sign-in'),
-          child: const Text('Sign in instead'),
+          child: const Text('已有账号，去登录'),
         ),
       ],
     );
@@ -118,7 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _errorMessage = 'Registration failed');
+        setState(() => _errorMessage = '注册失败');
       }
     } finally {
       if (mounted) {

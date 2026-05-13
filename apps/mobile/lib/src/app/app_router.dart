@@ -102,22 +102,22 @@ class _HomeShell extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.library_books_outlined),
             activeIcon: Icon(Icons.library_books),
-            label: 'Library',
+            label: '书库',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.style_outlined),
             activeIcon: Icon(Icons.style),
-            label: 'Vocabulary',
+            label: '词卡',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.insights_outlined),
             activeIcon: Icon(Icons.insights),
-            label: 'Stats',
+            label: '统计',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
             activeIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: '设置',
           ),
         ],
       ),

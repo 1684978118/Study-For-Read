@@ -15,7 +15,7 @@ class InlineParagraphTranslation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = switch (state.status) {
-      ParagraphTranslationStatus.loading => 'Translating...',
+      ParagraphTranslationStatus.loading => '正在翻译...',
       ParagraphTranslationStatus.cached ||
       ParagraphTranslationStatus.success => state.translatedText,
       ParagraphTranslationStatus.offline => state.message,

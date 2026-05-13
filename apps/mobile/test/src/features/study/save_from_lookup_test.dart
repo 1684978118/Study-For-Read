@@ -24,13 +24,13 @@ void main() {
       ),
     );
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.tap(find.widgetWithText(FilledButton, '保存'));
     await tester.pumpAndSettle();
 
     expect(saveController.savedLexemes, hasLength(1));
     expect(saveController.savedLexemes.single.id, 'lexeme-1');
     expect(saveController.sourceBookTitles.single, 'Kokoro');
-    expect(find.text('Saved'), findsOneWidget);
+    expect(find.text('已保存'), findsOneWidget);
   });
 
   testWidgets('translated paragraphs do not show save sentence controls', (
