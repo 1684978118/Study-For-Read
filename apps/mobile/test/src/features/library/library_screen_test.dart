@@ -43,6 +43,24 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('local controller creation failure shows recoverable error', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LibraryScreen(
+          controllerFactory: () async => throw StateError('Invalid token'),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not open local library.'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.text('Loading library...'), findsNothing);
+  });
+
   testWidgets('import uses picker and import service then refreshes list', (
     tester,
   ) async {
@@ -84,7 +102,10 @@ void main() {
     await tester.tap(find.text('Import TXT or EPUB'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Import failed. Please try another TXT or EPUB file.'), findsOneWidget);
+    expect(
+      find.text('Import failed. Please try another TXT or EPUB file.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('book list shows metadata and hides original path', (
@@ -193,9 +214,9 @@ class _FakeLocalBookRepository implements LocalBookRepository {
     required List<LocalBook> initialBooks,
     List<LocalBook>? refreshedBooks,
     Future<List<LocalBook>> Function(String ownerUserId)? loadBooks,
-  })  : _books = initialBooks,
-        _refreshedBooks = refreshedBooks,
-        _loadBooks = loadBooks;
+  }) : _books = initialBooks,
+       _refreshedBooks = refreshedBooks,
+       _loadBooks = loadBooks;
 
   List<LocalBook> _books;
   final List<LocalBook>? _refreshedBooks;
@@ -244,13 +265,9 @@ class _FakeBookFilePicker implements BookFilePicker {
 }
 
 class _FakeBookImporter implements BookImporter {
-  _FakeBookImporter(LocalBook book)
-      : _book = book,
-        _error = null;
+  _FakeBookImporter(LocalBook book) : _book = book, _error = null;
 
-  _FakeBookImporter.failure(Object error)
-      : _book = null,
-        _error = error;
+  _FakeBookImporter.failure(Object error) : _book = null, _error = error;
 
   final LocalBook? _book;
   final Object? _error;

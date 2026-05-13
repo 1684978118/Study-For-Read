@@ -47,6 +47,21 @@ void main() {
     expect(find.text('Next'), findsNothing);
   });
 
+  testWidgets('visible controls reserve space for reading text', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+
+    final controlBottom = tester.getBottomLeft(find.text('Chapter 1')).dy;
+    final readingTop = tester.getTopLeft(find.text('first chapter text')).dy;
+
+    expect(readingTop, greaterThan(controlBottom + 16));
+  });
+
   testWidgets('next and previous update chapter text and save progress', (
     tester,
   ) async {

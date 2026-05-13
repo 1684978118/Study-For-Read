@@ -128,6 +128,9 @@ class _ReaderContentState extends State<_ReaderContent> {
                     child: ReadingTextView(
                       text: chapter.content,
                       fontSize: controller.fontSize,
+                      padding: widget.showControls
+                          ? const EdgeInsets.fromLTRB(24, 108, 24, 176)
+                          : const EdgeInsets.fromLTRB(24, 44, 24, 56),
                       onLookup: (selection) {
                         _openLookup(context, controller, selection);
                       },

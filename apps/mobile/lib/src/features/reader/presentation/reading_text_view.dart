@@ -10,6 +10,7 @@ class ReadingTextView extends StatelessWidget {
     super.key,
     required this.text,
     required this.fontSize,
+    this.padding = const EdgeInsets.fromLTRB(24, 44, 24, 56),
     this.onLookup,
     this.onTranslateParagraph,
     this.translationStateFor,
@@ -17,6 +18,7 @@ class ReadingTextView extends StatelessWidget {
 
   final String text;
   final double fontSize;
+  final EdgeInsetsGeometry padding;
   final ValueChanged<ReaderTextSelection>? onLookup;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
   final ParagraphTranslationState? Function(ParagraphSelection selection)?
@@ -26,7 +28,7 @@ class ReadingTextView extends StatelessWidget {
   Widget build(BuildContext context) {
     final paragraphs = _paragraphs();
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 44, 24, 56),
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

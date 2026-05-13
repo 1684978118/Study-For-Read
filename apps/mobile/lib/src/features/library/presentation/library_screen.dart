@@ -5,10 +5,15 @@ import '../domain/local_book.dart';
 import 'library_controller.dart';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key, LibraryController? controller})
-    : _controller = controller;
+  const LibraryScreen({
+    super.key,
+    LibraryController? controller,
+    Future<LibraryController> Function()? controllerFactory,
+  }) : _controller = controller,
+       _controllerFactory = controllerFactory;
 
   final LibraryController? _controller;
+  final Future<LibraryController> Function()? _controllerFactory;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -28,7 +33,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       controller.load();
     } else {
       _ownsController = true;
-      _controllerFuture = LibraryController.local();
+      _controllerFuture = _createLocalController();
     }
   }
 
@@ -55,6 +60,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
           _controller!.load();
           return _LibraryContent(controller: _controller!);
         }
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: const _LibraryAppBar(),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Could not open local library.'),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () {
+                      setState(() {
+                        _controllerFuture = _createLocalController();
+                      });
+                    },
+                    child: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
         return const Scaffold(
           appBar: _LibraryAppBar(),
@@ -62,6 +89,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
         );
       },
     );
+  }
+
+  Future<LibraryController> _createLocalController() {
+    final controllerFactory =
+        widget._controllerFactory ?? LibraryController.local;
+    return controllerFactory();
   }
 }
 
@@ -102,9 +135,8 @@ class _LibraryContent extends StatelessWidget {
                   for (final book in controller.books)
                     _BookListItem(
                       book: book,
-                      onTap: () => context.go(
-                        '/reader/${Uri.encodeComponent(book.id)}',
-                      ),
+                      onTap: () =>
+                          context.go('/reader/${Uri.encodeComponent(book.id)}'),
                     ),
                 ],
               ],
@@ -129,10 +161,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class _EmptyLibrary extends StatelessWidget {
-  const _EmptyLibrary({
-    required this.isImporting,
-    required this.onImport,
-  });
+  const _EmptyLibrary({required this.isImporting, required this.onImport});
 
   final bool isImporting;
   final VoidCallback onImport;
@@ -183,10 +212,7 @@ class _EmptyLibrary extends StatelessWidget {
 }
 
 class _ImportToolbar extends StatelessWidget {
-  const _ImportToolbar({
-    required this.isImporting,
-    required this.onImport,
-  });
+  const _ImportToolbar({required this.isImporting, required this.onImport});
 
   final bool isImporting;
   final VoidCallback onImport;
