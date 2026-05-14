@@ -157,6 +157,8 @@ class _ReaderContentState extends State<_ReaderContent> {
                               controller.readerPreferences.paragraphSpacing,
                           paginated: true,
                           currentPageIndex: controller.currentPageIndex,
+                          pageTurnMode:
+                              controller.readerPreferences.pageTurnMode,
                           onPageCountChanged: controller.setPageCount,
                           onPageChanged: (pageIndex) {
                             controller.goToPage(pageIndex);

@@ -74,6 +74,109 @@ void main() {
     expect(controller.currentPageIndex, 1);
   });
 
+  testWidgets('vertical page turn mode uses vertical reader paging', (
+    tester,
+  ) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+      preferencesRepository: _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(
+          pageTurnMode: ReaderPageTurnMode.vertical,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    final pageView = tester.widget<PageView>(
+      find.byKey(const Key('reader-page-view')),
+    );
+    expect(pageView.scrollDirection, Axis.vertical);
+
+    await tester.drag(
+      find.byKey(const Key('reader-page-view')),
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPageIndex, 1);
+  });
+
+  testWidgets('none page turn mode disables swipe gestures', (tester) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+      preferencesRepository: _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(
+          pageTurnMode: ReaderPageTurnMode.none,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const Key('reader-page-view')),
+      const Offset(-500, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPageIndex, 0);
+  });
+
+  testWidgets('cover and simulation modes use distinct page wrappers', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _controller(
+          chapters: [
+            _chapter(
+              index: 0,
+              title: 'Long Chapter',
+              content: _longChapterText(),
+            ),
+          ],
+          preferencesRepository: _FakeReaderPreferencesRepository(
+            saved: ReaderPreferences.defaults.copyWith(
+              pageTurnMode: ReaderPageTurnMode.cover,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('reader-page-turn-cover')), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _app(
+        _controller(
+          chapters: [
+            _chapter(
+              index: 0,
+              title: 'Long Chapter',
+              content: _longChapterText(),
+            ),
+          ],
+          preferencesRepository: _FakeReaderPreferencesRepository(
+            saved: ReaderPreferences.defaults.copyWith(
+              pageTurnMode: ReaderPageTurnMode.simulation,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('reader-page-turn-simulation')), findsWidgets);
+  });
+
   testWidgets('tap blank reading space toggles temporary controls', (
     tester,
   ) async {

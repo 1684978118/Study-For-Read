@@ -8,6 +8,7 @@ import '../../study/domain/paragraph_selection.dart';
 import '../../study/domain/reader_text_selection.dart';
 import '../../study/presentation/inline_paragraph_translation.dart';
 import '../../study/presentation/paragraph_translation_controller.dart';
+import '../domain/reader_preferences.dart';
 
 class ReadingTextView extends StatefulWidget {
   const ReadingTextView({
@@ -19,6 +20,7 @@ class ReadingTextView extends StatefulWidget {
     this.padding = const EdgeInsets.fromLTRB(24, 44, 24, 56),
     this.paginated = false,
     this.currentPageIndex = 0,
+    this.pageTurnMode = ReaderPageTurnMode.slide,
     this.onPageChanged,
     this.onPageCountChanged,
     this.onLookup,
@@ -34,6 +36,7 @@ class ReadingTextView extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final bool paginated;
   final int currentPageIndex;
+  final ReaderPageTurnMode pageTurnMode;
   final ValueChanged<int>? onPageChanged;
   final ValueChanged<int>? onPageCountChanged;
   final ValueChanged<ReaderTextSelection>? onLookup;
@@ -111,15 +114,67 @@ class _ReadingTextViewState extends State<ReadingTextView> {
           child: PageView.builder(
             key: const Key('reader-page-view'),
             controller: _pageController,
+            scrollDirection: widget.pageTurnMode == ReaderPageTurnMode.vertical
+                ? Axis.vertical
+                : Axis.horizontal,
+            physics: widget.pageTurnMode == ReaderPageTurnMode.none
+                ? const NeverScrollableScrollPhysics()
+                : null,
             itemCount: pages.length,
             onPageChanged: widget.onPageChanged,
             itemBuilder: (context, index) {
-              return _buildParagraphColumn(pages[index]);
+              return _wrapPageTurnMode(
+                index: index,
+                child: _buildParagraphColumn(pages[index]),
+              );
             },
           ),
         );
       },
     );
+  }
+
+  Widget _wrapPageTurnMode({required int index, required Widget child}) {
+    return switch (widget.pageTurnMode) {
+      ReaderPageTurnMode.cover => KeyedSubtree(
+        key: const Key('reader-page-turn-cover'),
+        child: AnimatedBuilder(
+          animation: _pageController,
+          builder: (context, _) {
+            final page = _pageController.hasClients
+                ? (_pageController.page ?? widget.currentPageIndex.toDouble())
+                : widget.currentPageIndex.toDouble();
+            final delta = (page - index).clamp(-1.0, 1.0);
+            return Transform.translate(
+              offset: Offset(delta * -18, 0),
+              child: child,
+            );
+          },
+        ),
+      ),
+      ReaderPageTurnMode.simulation => KeyedSubtree(
+        key: const Key('reader-page-turn-simulation'),
+        child: AnimatedBuilder(
+          animation: _pageController,
+          builder: (context, _) {
+            final page = _pageController.hasClients
+                ? (_pageController.page ?? widget.currentPageIndex.toDouble())
+                : widget.currentPageIndex.toDouble();
+            final delta = (page - index).clamp(-1.0, 1.0);
+            return Transform(
+              alignment: delta >= 0
+                  ? Alignment.centerLeft
+                  : Alignment.centerRight,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateY(delta * 0.10),
+              child: child,
+            );
+          },
+        ),
+      ),
+      _ => child,
+    };
   }
 
   Widget _buildScrollable(List<_Paragraph> paragraphs) {
