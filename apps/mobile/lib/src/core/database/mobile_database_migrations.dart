@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 class MobileDatabaseMigrations {
-  static const int version = 2;
+  static const int version = 3;
 
   static Future<void> create(Database db, int version) async {
     if (version >= 1) {
@@ -9,6 +9,9 @@ class MobileDatabaseMigrations {
     }
     if (version >= 2) {
       await _createV2(db);
+    }
+    if (version >= 3) {
+      await _createV3(db);
     }
   }
 
@@ -19,6 +22,9 @@ class MobileDatabaseMigrations {
   ) async {
     if (oldVersion < 2 && newVersion >= 2) {
       await _createV2(db);
+    }
+    if (oldVersion < 3 && newVersion >= 3) {
+      await _createV3(db);
     }
   }
 
@@ -208,6 +214,60 @@ class MobileDatabaseMigrations {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         UNIQUE (owner_user_id, stat_date)
+      )
+    ''');
+  }
+
+  static Future<void> _createV3(Database db) async {
+    await db.execute('''
+      CREATE TABLE local_reader_preferences (
+        id TEXT PRIMARY KEY CHECK (id = 'global'),
+        font_size REAL NOT NULL CHECK (font_size >= 12 AND font_size <= 40),
+        line_height REAL NOT NULL CHECK (line_height >= 1.0 AND line_height <= 3.0),
+        paragraph_spacing REAL NOT NULL CHECK (
+          paragraph_spacing >= 0 AND paragraph_spacing <= 80
+        ),
+        background_theme TEXT NOT NULL CHECK (
+          background_theme IN (
+            'paper_white',
+            'warm_beige',
+            'eye_care_green',
+            'light_blue',
+            'dark_gray',
+            'pure_black'
+          )
+        ),
+        night_mode_enabled INTEGER NOT NULL CHECK (
+          night_mode_enabled IN (0, 1)
+        ),
+        previous_background_theme TEXT NOT NULL CHECK (
+          previous_background_theme IN (
+            'paper_white',
+            'warm_beige',
+            'eye_care_green',
+            'light_blue',
+            'dark_gray',
+            'pure_black'
+          )
+        ),
+        brightness REAL NOT NULL CHECK (brightness >= 0 AND brightness <= 1),
+        eye_protection_enabled INTEGER NOT NULL CHECK (
+          eye_protection_enabled IN (0, 1)
+        ),
+        page_turn_mode TEXT NOT NULL CHECK (
+          page_turn_mode IN (
+            'simulation',
+            'cover',
+            'slide',
+            'vertical',
+            'none'
+          )
+        ),
+        volume_key_paging_enabled INTEGER NOT NULL CHECK (
+          volume_key_paging_enabled IN (0, 1)
+        ),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       )
     ''');
   }

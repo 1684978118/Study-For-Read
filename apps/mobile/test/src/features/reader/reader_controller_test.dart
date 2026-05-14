@@ -5,7 +5,9 @@ import 'package:study_for_read_mobile/src/features/library/domain/local_book.dar
 import 'package:study_for_read_mobile/src/features/library/domain/local_chapter.dart';
 import 'package:study_for_read_mobile/src/features/library/domain/local_reading_position.dart';
 import 'package:study_for_read_mobile/src/features/reader/data/local_reading_position_repository.dart';
+import 'package:study_for_read_mobile/src/features/reader/data/local_reader_preferences_repository.dart';
 import 'package:study_for_read_mobile/src/features/reader/presentation/reader_controller.dart';
+import 'package:study_for_read_mobile/src/features/reader/domain/reader_preferences.dart';
 
 void main() {
   test('loads saved chapter index for a valid local book id', () async {
@@ -77,6 +79,31 @@ void main() {
     }
     expect(controller.fontSize, ReaderController.maxFontSize);
   });
+
+  test('loads persisted reader preferences on load', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository(
+      saved: ReaderPreferences.defaults.copyWith(fontSize: 24),
+    );
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+
+    expect(controller.fontSize, 24);
+  });
+
+  test('setFontSize persists updated reader preferences', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+    await controller.setFontSize(24);
+
+    expect(preferencesRepository.saved.single.fontSize, 24);
+  });
 }
 
 ReaderController _controller({
@@ -84,6 +111,7 @@ ReaderController _controller({
   bool missingBook = false,
   int savedChapterIndex = 0,
   _FakeReadingPositionRepository? positionRepository,
+  ReaderPreferencesRepository? preferencesRepository,
 }) {
   return ReaderController(
     bookId: 'book-1',
@@ -94,6 +122,7 @@ ReaderController _controller({
         _FakeReadingPositionRepository(
           saved: _position(chapterIndex: savedChapterIndex),
         ),
+    preferencesRepository: preferencesRepository,
   );
 }
 
@@ -227,5 +256,22 @@ class _FakeReadingPositionRepository implements LocalReadingPositionRepository {
   @override
   Future<void> upsert(LocalReadingPosition position) async {
     savedPositions.add(position);
+  }
+}
+
+class _FakeReaderPreferencesRepository implements ReaderPreferencesRepository {
+  _FakeReaderPreferencesRepository({ReaderPreferences? saved})
+    : _saved = saved ?? ReaderPreferences.defaults;
+
+  ReaderPreferences _saved;
+  final List<ReaderPreferences> saved = [];
+
+  @override
+  Future<ReaderPreferences> load() async => _saved;
+
+  @override
+  Future<void> save(ReaderPreferences preferences) async {
+    _saved = preferences;
+    saved.add(preferences);
   }
 }

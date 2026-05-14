@@ -61,6 +61,46 @@ void main() {
       expect(columnNames, isNot(contains('refresh_token')), reason: table);
     }
   });
+
+  test('local_reader_preferences stores global reader settings only', () async {
+    final columns = await db.rawQuery(
+      'PRAGMA table_info(local_reader_preferences)',
+    );
+    final columnNames = columns.map((row) => row['name'] as String).toSet();
+
+    expect(
+      columnNames,
+      containsAll({
+        'id',
+        'font_size',
+        'line_height',
+        'paragraph_spacing',
+        'background_theme',
+        'night_mode_enabled',
+        'previous_background_theme',
+        'brightness',
+        'eye_protection_enabled',
+        'page_turn_mode',
+        'volume_key_paging_enabled',
+        'created_at',
+        'updated_at',
+      }),
+    );
+    for (final forbidden in [
+      'content',
+      'chapter_content',
+      'selected_text',
+      'paragraph_text',
+      'translated_text',
+      'original_file_path',
+      'access_token',
+      'refresh_token',
+      'password',
+      'secret',
+    ]) {
+      expect(columnNames, isNot(contains(forbidden)));
+    }
+  });
 }
 
 Map<String, Object?> _bookRow({required String id}) {

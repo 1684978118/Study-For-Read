@@ -14,6 +14,8 @@ import '../../study/presentation/lookup_controller.dart';
 import '../../stats/data/local_study_stats_repository.dart';
 import '../../stats/data/study_stats_tracker.dart';
 import '../data/local_reading_position_repository.dart';
+import '../data/local_reader_preferences_repository.dart';
+import '../domain/reader_preferences.dart';
 
 class ReaderController extends ChangeNotifier {
   ReaderController({
@@ -25,6 +27,7 @@ class ReaderController extends ChangeNotifier {
     ParagraphTranslationController? paragraphTranslationController,
     StudyStatsTracker? statsTracker,
     LocalStudyStatsRepository? statsRepository,
+    ReaderPreferencesRepository? preferencesRepository,
     DateTime Function()? now,
   }) : _bookId = bookId,
        _bookRepository = bookRepository,
@@ -34,6 +37,7 @@ class ReaderController extends ChangeNotifier {
        _paragraphTranslationController = paragraphTranslationController,
        _statsTracker = statsTracker,
        _statsRepository = statsRepository,
+       _preferencesRepository = preferencesRepository,
        _now = now ?? DateTime.now;
 
   static const double minFontSize = 16;
@@ -48,6 +52,7 @@ class ReaderController extends ChangeNotifier {
   ParagraphTranslationController? _paragraphTranslationController;
   StudyStatsTracker? _statsTracker;
   final LocalStudyStatsRepository? _statsRepository;
+  final ReaderPreferencesRepository? _preferencesRepository;
   final DateTime Function() _now;
 
   bool _isLoading = false;
@@ -56,6 +61,7 @@ class ReaderController extends ChangeNotifier {
   List<LocalChapter> _chapters = const [];
   int _currentChapterIndex = 0;
   double _fontSize = defaultFontSize;
+  ReaderPreferences _readerPreferences = ReaderPreferences.defaults;
   String? _positionId;
   DateTime? _positionCreatedAt;
   DateTime? _readingSessionStartedAt;
@@ -67,6 +73,7 @@ class ReaderController extends ChangeNotifier {
       _chapters.isEmpty ? null : _chapters[_currentChapterIndex];
   int get currentChapterIndex => _currentChapterIndex;
   double get fontSize => _fontSize;
+  ReaderPreferences get readerPreferences => _readerPreferences;
   bool get canGoPrevious => _currentChapterIndex > 0;
   bool get canGoNext => _currentChapterIndex < _chapters.length - 1;
   String get progressLabel => _chapters.isEmpty
@@ -83,6 +90,7 @@ class ReaderController extends ChangeNotifier {
       bookRepository: LocalBookRepository(database),
       chapterRepository: LocalChapterRepository(database),
       positionRepository: LocalReadingPositionRepository(database),
+      preferencesRepository: LocalReaderPreferencesRepository(database),
       statsRepository: LocalStudyStatsRepository(database),
     );
   }
@@ -107,6 +115,8 @@ class ReaderController extends ChangeNotifier {
     }
 
     final position = await _positionRepository.findByBookId(book.id);
+    final preferences =
+        await _preferencesRepository?.load() ?? ReaderPreferences.defaults;
     _positionId = position?.id;
     _positionCreatedAt = position?.createdAt;
     _book = book;
@@ -122,6 +132,8 @@ class ReaderController extends ChangeNotifier {
       0,
       chapters.length - 1,
     );
+    _readerPreferences = preferences;
+    _fontSize = preferences.fontSize.clamp(minFontSize, maxFontSize);
     _isLoading = false;
     notifyListeners();
   }
@@ -144,17 +156,19 @@ class ReaderController extends ChangeNotifier {
     await saveProgress();
   }
 
-  void setFontSize(double value) {
+  Future<void> setFontSize(double value) {
     _fontSize = value.clamp(minFontSize, maxFontSize);
+    _readerPreferences = _readerPreferences.copyWith(fontSize: _fontSize);
     notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
   }
 
-  void increaseFontSize() {
-    setFontSize(_fontSize + 2);
+  Future<void> increaseFontSize() {
+    return setFontSize(_fontSize + 2);
   }
 
-  void decreaseFontSize() {
-    setFontSize(_fontSize - 2);
+  Future<void> decreaseFontSize() {
+    return setFontSize(_fontSize - 2);
   }
 
   Future<void> saveProgress() async {
