@@ -103,10 +103,7 @@ class _StatsContent extends StatelessWidget {
                     summary: controller.last7Days,
                   ),
                   const SizedBox(height: 16),
-                  _SummarySection(
-                    title: '全部时间',
-                    summary: controller.allTime,
-                  ),
+                  _SummarySection(title: '全部时间', summary: controller.allTime),
                 ],
               ),
             ),
@@ -178,7 +175,7 @@ class _GlanceMetric extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
-      height: 104,
+      height: 144,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withValues(alpha: 0.42),

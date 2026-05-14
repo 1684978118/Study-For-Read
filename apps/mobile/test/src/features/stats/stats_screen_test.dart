@@ -57,6 +57,69 @@ void main() {
     expect(find.text('90'), findsOneWidget);
     expect(find.byType(Placeholder), findsNothing);
   });
+
+  testWidgets('Stats glance cards fit Chinese copy without overflow', (
+    tester,
+  ) async {
+    final previousErrorHandler = FlutterError.onError;
+    final overflowErrors = <FlutterErrorDetails>[];
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('A RenderFlex overflowed')) {
+        overflowErrors.add(details);
+        return;
+      }
+      previousErrorHandler?.call(details);
+    };
+    addTearDown(() {
+      FlutterError.onError = previousErrorHandler;
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+
+    final controller = _FakeStatsController(
+      today: const StudyStatsSummary(
+        readingMinutes: 128,
+        lookupCount: 36,
+        paragraphTranslationCount: 9,
+        cardsCreated: 12,
+        cardsReviewed: 45,
+      ),
+      last7Days: const StudyStatsSummary(
+        readingMinutes: 256,
+        lookupCount: 72,
+        paragraphTranslationCount: 18,
+        cardsCreated: 24,
+        cardsReviewed: 90,
+      ),
+      allTime: const StudyStatsSummary(
+        readingMinutes: 1024,
+        lookupCount: 360,
+        paragraphTranslationCount: 96,
+        cardsCreated: 120,
+        cardsReviewed: 450,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(390, 844),
+            textScaler: TextScaler.linear(1.15),
+          ),
+          child: StatsScreen(controller: controller),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    FlutterError.onError = previousErrorHandler;
+    expect(overflowErrors, isEmpty);
+  });
 }
 
 class _FakeStatsController extends StatsController {

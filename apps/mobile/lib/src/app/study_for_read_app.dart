@@ -17,6 +17,7 @@ class StudyForReadApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Study For Read',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: createAppRouter(
         isSignedIn: isSignedIn,
