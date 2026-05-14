@@ -307,6 +307,14 @@ class ReaderController extends ChangeNotifier {
     return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
   }
 
+  Future<void> setVolumeKeyPagingEnabled(bool value) {
+    _readerPreferences = _readerPreferences.copyWith(
+      volumeKeyPagingEnabled: value,
+    );
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
   Future<void> saveProgress() async {
     final book = _book;
     if (book == null || _chapters.isEmpty) {

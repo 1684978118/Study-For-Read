@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_for_read_mobile/src/features/library/data/local_book_repository.dart';
 import 'package:study_for_read_mobile/src/features/library/data/local_chapter_repository.dart';
@@ -427,6 +428,90 @@ void main() {
     );
     expect(textView.lineHeight, 2.0);
     expect(textView.paragraphSpacing, 30);
+  });
+
+  testWidgets('settings volume key paging switch persists preference', (
+    tester,
+  ) async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    await tester.pumpWidget(
+      _app(_controller(preferencesRepository: preferencesRepository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const Key('reader-volume-key-paging-switch')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-volume-key-paging-switch')));
+    await tester.pumpAndSettle();
+
+    expect(preferencesRepository.saved.last.volumeKeyPagingEnabled, isTrue);
+  });
+
+  testWidgets('volume down advances page when volume key paging is enabled', (
+    tester,
+  ) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+      preferencesRepository: _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(
+          volumeKeyPagingEnabled: true,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.audioVolumeDown);
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPageIndex, 1);
+  });
+
+  testWidgets('volume up moves to previous page when enabled', (tester) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+      preferencesRepository: _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(
+          volumeKeyPagingEnabled: true,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await controller.nextPage();
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.audioVolumeUp);
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPageIndex, 0);
+  });
+
+  testWidgets('volume keys do nothing when volume key paging is disabled', (
+    tester,
+  ) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.audioVolumeDown);
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPageIndex, 0);
   });
 
   testWidgets('settings page turn mode selection persists selected mode', (

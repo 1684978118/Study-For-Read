@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../study/domain/paragraph_selection.dart';
 import '../../study/domain/reader_text_selection.dart';
@@ -116,113 +117,141 @@ class _ReaderContentState extends State<_ReaderContent> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     return Scaffold(
-      body: AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          if (controller.isLoading) {
-            return const Center(child: Text('正在打开阅读器...'));
-          }
-          if (controller.notFound || controller.currentChapter == null) {
-            return const _ReaderNotFound();
-          }
+      body: Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) => _handleReaderKeyEvent(controller, event),
+        child: AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            if (controller.isLoading) {
+              return const Center(child: Text('正在打开阅读器...'));
+            }
+            if (controller.notFound || controller.currentChapter == null) {
+              return const _ReaderNotFound();
+            }
 
-          final chapter = controller.currentChapter!;
-          final presentation = _ReaderPresentation.fromPreferences(
-            controller.readerPreferences,
-          );
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: DecoratedBox(
-                  key: presentation.isNightMode
-                      ? const Key('reader-night-mode-background')
-                      : const Key('reader-reading-background'),
-                  decoration: BoxDecoration(color: presentation.background),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: Theme.of(
-                        context,
-                      ).colorScheme.copyWith(onSurface: presentation.textColor),
-                    ),
-                    child: GestureDetector(
-                      key: const Key('reader-tap-area'),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: widget.onToggleControls,
-                      child: SafeArea(
-                        child: ReadingTextView(
-                          text: chapter.content,
-                          fontSize: controller.fontSize,
-                          lineHeight: controller.readerPreferences.lineHeight,
-                          paragraphSpacing:
-                              controller.readerPreferences.paragraphSpacing,
-                          paginated: true,
-                          currentPageIndex: controller.currentPageIndex,
-                          pageTurnMode:
-                              controller.readerPreferences.pageTurnMode,
-                          onPageCountChanged: controller.setPageCount,
-                          onPageChanged: (pageIndex) {
-                            controller.goToPage(pageIndex);
-                            controller.saveProgress();
-                          },
-                          padding: widget.showControls
-                              ? const EdgeInsets.fromLTRB(24, 108, 24, 188)
-                              : const EdgeInsets.fromLTRB(24, 44, 24, 56),
-                          onLookup: (selection) {
-                            _openLookup(context, controller, selection);
-                          },
-                          onBlankTap: widget.onToggleControls,
-                          onTranslateParagraph: (selection) {
-                            _translateParagraph(controller, selection);
-                          },
-                          translationStateFor: (selection) {
-                            return controller.paragraphTranslationController
-                                ?.stateFor(
-                                  _selectionWithLocation(controller, selection),
-                                );
-                          },
+            final chapter = controller.currentChapter!;
+            final presentation = _ReaderPresentation.fromPreferences(
+              controller.readerPreferences,
+            );
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    key: presentation.isNightMode
+                        ? const Key('reader-night-mode-background')
+                        : const Key('reader-reading-background'),
+                    decoration: BoxDecoration(color: presentation.background),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: Theme.of(context).colorScheme.copyWith(
+                          onSurface: presentation.textColor,
+                        ),
+                      ),
+                      child: GestureDetector(
+                        key: const Key('reader-tap-area'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: widget.onToggleControls,
+                        child: SafeArea(
+                          child: ReadingTextView(
+                            text: chapter.content,
+                            fontSize: controller.fontSize,
+                            lineHeight: controller.readerPreferences.lineHeight,
+                            paragraphSpacing:
+                                controller.readerPreferences.paragraphSpacing,
+                            paginated: true,
+                            currentPageIndex: controller.currentPageIndex,
+                            pageTurnMode:
+                                controller.readerPreferences.pageTurnMode,
+                            onPageCountChanged: controller.setPageCount,
+                            onPageChanged: (pageIndex) {
+                              controller.goToPage(pageIndex);
+                              controller.saveProgress();
+                            },
+                            padding: widget.showControls
+                                ? const EdgeInsets.fromLTRB(24, 108, 24, 188)
+                                : const EdgeInsets.fromLTRB(24, 44, 24, 56),
+                            onLookup: (selection) {
+                              _openLookup(context, controller, selection);
+                            },
+                            onBlankTap: widget.onToggleControls,
+                            onTranslateParagraph: (selection) {
+                              _translateParagraph(controller, selection);
+                            },
+                            translationStateFor: (selection) {
+                              return controller.paragraphTranslationController
+                                  ?.stateFor(
+                                    _selectionWithLocation(
+                                      controller,
+                                      selection,
+                                    ),
+                                  );
+                            },
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              if (controller.readerPreferences.eyeProtectionEnabled)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      key: const Key('reader-eye-protection-overlay'),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFDCA8).withValues(alpha: 0.16),
-                      ),
-                    ),
-                  ),
-                ),
-              if (controller.readerPreferences.brightness <
-                  ReaderController.maxBrightness)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      key: const Key('reader-brightness-dim-overlay'),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(
-                          alpha:
-                              ReaderController.maxBrightness -
-                              controller.readerPreferences.brightness,
+                if (controller.readerPreferences.eyeProtectionEnabled)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        key: const Key('reader-eye-protection-overlay'),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFFFDCA8,
+                          ).withValues(alpha: 0.16),
                         ),
                       ),
                     ),
                   ),
-                ),
-              if (widget.showControls)
-                _ReaderControls(
-                  controller: controller,
-                  onClose: widget.onClose,
-                ),
-            ],
-          );
-        },
+                if (controller.readerPreferences.brightness <
+                    ReaderController.maxBrightness)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        key: const Key('reader-brightness-dim-overlay'),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(
+                            alpha:
+                                ReaderController.maxBrightness -
+                                controller.readerPreferences.brightness,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (widget.showControls)
+                  _ReaderControls(
+                    controller: controller,
+                    onClose: widget.onClose,
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
+  }
+
+  KeyEventResult _handleReaderKeyEvent(
+    ReaderController controller,
+    KeyEvent event,
+  ) {
+    if (!controller.readerPreferences.volumeKeyPagingEnabled ||
+        event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
+      controller.nextPage();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.audioVolumeUp) {
+      controller.previousPage();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   Future<void> _openLookup(
@@ -567,6 +596,13 @@ class _ReaderSettingsSheet extends StatelessWidget {
                         divisions: 6,
                         value: preferences.paragraphSpacing,
                         onChanged: controller.setParagraphSpacing,
+                      ),
+                      SwitchListTile(
+                        key: const Key('reader-volume-key-paging-switch'),
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('音量键翻页'),
+                        value: preferences.volumeKeyPagingEnabled,
+                        onChanged: controller.setVolumeKeyPagingEnabled,
                       ),
                     ],
                   ),

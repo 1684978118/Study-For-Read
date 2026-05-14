@@ -319,6 +319,19 @@ void main() {
       ReaderPageTurnMode.cover,
     );
   });
+
+  test('volume key paging preference persists', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+    await controller.setVolumeKeyPagingEnabled(true);
+
+    expect(controller.readerPreferences.volumeKeyPagingEnabled, isTrue);
+    expect(preferencesRepository.saved.single.volumeKeyPagingEnabled, isTrue);
+  });
 }
 
 ReaderController _controller({
