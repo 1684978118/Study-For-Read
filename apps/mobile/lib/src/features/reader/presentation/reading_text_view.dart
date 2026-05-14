@@ -13,6 +13,8 @@ class ReadingTextView extends StatelessWidget {
     super.key,
     required this.text,
     required this.fontSize,
+    this.lineHeight = 1.72,
+    this.paragraphSpacing = 18,
     this.padding = const EdgeInsets.fromLTRB(24, 44, 24, 56),
     this.onLookup,
     this.onBlankTap,
@@ -22,6 +24,8 @@ class ReadingTextView extends StatelessWidget {
 
   final String text;
   final double fontSize;
+  final double lineHeight;
+  final double paragraphSpacing;
   final EdgeInsetsGeometry padding;
   final ValueChanged<ReaderTextSelection>? onLookup;
   final VoidCallback? onBlankTap;
@@ -41,6 +45,8 @@ class ReadingTextView extends StatelessWidget {
             _ParagraphView(
               paragraph: paragraph,
               fontSize: fontSize,
+              lineHeight: lineHeight,
+              paragraphSpacing: paragraphSpacing,
               onLookup: onLookup,
               onBlankTap: onBlankTap,
               onTranslateParagraph: onTranslateParagraph,
@@ -71,6 +77,8 @@ class _ParagraphView extends StatelessWidget {
   const _ParagraphView({
     required this.paragraph,
     required this.fontSize,
+    required this.lineHeight,
+    required this.paragraphSpacing,
     this.onLookup,
     this.onBlankTap,
     this.onTranslateParagraph,
@@ -79,6 +87,8 @@ class _ParagraphView extends StatelessWidget {
 
   final _Paragraph paragraph;
   final double fontSize;
+  final double lineHeight;
+  final double paragraphSpacing;
   final ValueChanged<ReaderTextSelection>? onLookup;
   final VoidCallback? onBlankTap;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
@@ -102,7 +112,7 @@ class _ParagraphView extends StatelessWidget {
     final translationState = translationStateFor?.call(selection);
     final textStyle = TextStyle(
       fontSize: fontSize,
-      height: 1.72,
+      height: lineHeight,
       letterSpacing: 0,
       color: Theme.of(context).colorScheme.onSurface,
     );
@@ -167,7 +177,7 @@ class _ParagraphView extends StatelessWidget {
             state: translationState,
             fontSize: fontSize,
           ),
-        if (translationState == null) const SizedBox(height: 18),
+        if (translationState == null) SizedBox(height: paragraphSpacing),
       ],
     );
   }

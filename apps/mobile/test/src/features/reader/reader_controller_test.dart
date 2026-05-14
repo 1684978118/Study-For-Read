@@ -186,6 +186,76 @@ void main() {
       expect(preferencesRepository.saved, hasLength(2));
     },
   );
+
+  test('setBackgroundTheme persists selected day background', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository(
+      saved: ReaderPreferences.defaults.copyWith(
+        nightModeEnabled: true,
+        backgroundTheme: ReaderBackgroundTheme.pureBlack,
+        previousBackgroundTheme: ReaderBackgroundTheme.warmBeige,
+      ),
+    );
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+    await controller.setBackgroundTheme(ReaderBackgroundTheme.eyeCareGreen);
+
+    expect(controller.readerPreferences.nightModeEnabled, isFalse);
+    expect(
+      controller.readerPreferences.backgroundTheme,
+      ReaderBackgroundTheme.eyeCareGreen,
+    );
+    expect(
+      controller.readerPreferences.previousBackgroundTheme,
+      ReaderBackgroundTheme.eyeCareGreen,
+    );
+    expect(
+      preferencesRepository.saved.single.backgroundTheme,
+      ReaderBackgroundTheme.eyeCareGreen,
+    );
+  });
+
+  test(
+    'reader layout preferences persist through controller methods',
+    () async {
+      final preferencesRepository = _FakeReaderPreferencesRepository();
+      final controller = _controller(
+        preferencesRepository: preferencesRepository,
+      );
+
+      await controller.load();
+      await controller.setLineHeight(2.0);
+      await controller.setParagraphSpacing(30);
+
+      expect(controller.readerPreferences.lineHeight, 2.0);
+      expect(controller.readerPreferences.paragraphSpacing, 30);
+      expect(preferencesRepository.saved, hasLength(2));
+      expect(preferencesRepository.saved.last.lineHeight, 2.0);
+      expect(preferencesRepository.saved.last.paragraphSpacing, 30);
+    },
+  );
+
+  test('eye protection and page turn mode preferences persist', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+    await controller.setEyeProtectionEnabled(true);
+    await controller.setPageTurnMode(ReaderPageTurnMode.cover);
+
+    expect(controller.readerPreferences.eyeProtectionEnabled, isTrue);
+    expect(controller.readerPreferences.pageTurnMode, ReaderPageTurnMode.cover);
+    expect(preferencesRepository.saved, hasLength(2));
+    expect(preferencesRepository.saved.last.eyeProtectionEnabled, isTrue);
+    expect(
+      preferencesRepository.saved.last.pageTurnMode,
+      ReaderPageTurnMode.cover,
+    );
+  });
 }
 
 ReaderController _controller({

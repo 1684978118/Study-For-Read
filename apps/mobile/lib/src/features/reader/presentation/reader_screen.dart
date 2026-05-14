@@ -152,6 +152,9 @@ class _ReaderContentState extends State<_ReaderContent> {
                         child: ReadingTextView(
                           text: chapter.content,
                           fontSize: controller.fontSize,
+                          lineHeight: controller.readerPreferences.lineHeight,
+                          paragraphSpacing:
+                              controller.readerPreferences.paragraphSpacing,
                           padding: widget.showControls
                               ? const EdgeInsets.fromLTRB(24, 108, 24, 188)
                               : const EdgeInsets.fromLTRB(24, 44, 24, 56),
@@ -174,6 +177,17 @@ class _ReaderContentState extends State<_ReaderContent> {
                   ),
                 ),
               ),
+              if (controller.readerPreferences.eyeProtectionEnabled)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      key: const Key('reader-eye-protection-overlay'),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFDCA8).withValues(alpha: 0.16),
+                      ),
+                    ),
+                  ),
+                ),
               if (widget.showControls)
                 _ReaderControls(
                   controller: controller,
@@ -356,7 +370,7 @@ class _ReaderControls extends StatelessWidget {
                     ),
                     TextButton.icon(
                       key: const Key('reader-settings-button'),
-                      onPressed: () {},
+                      onPressed: () => _showSettings(context),
                       icon: const Icon(Icons.tune),
                       label: const Text('设置'),
                     ),
@@ -398,7 +412,198 @@ class _ReaderControls extends StatelessWidget {
       },
     );
   }
+
+  Future<void> _showSettings(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return _ReaderSettingsSheet(controller: controller);
+      },
+    );
+  }
 }
+
+class _ReaderSettingsSheet extends StatelessWidget {
+  const _ReaderSettingsSheet({required this.controller});
+
+  final ReaderController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final preferences = controller.readerPreferences;
+        return SafeArea(
+          key: const Key('reader-settings-sheet'),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SettingsTitle(
+                  title: '亮度',
+                  child: Slider(
+                    key: const Key('reader-brightness-slider'),
+                    value: preferences.brightness,
+                    onChanged: null,
+                  ),
+                ),
+                SwitchListTile(
+                  key: const Key('reader-eye-protection-switch'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('护眼模式'),
+                  value: preferences.eyeProtectionEnabled,
+                  onChanged: controller.setEyeProtectionEnabled,
+                ),
+                _SettingsTitle(
+                  title: '字号',
+                  child: Row(
+                    children: [
+                      IconButton(
+                        key: const Key('reader-font-decrease-button'),
+                        tooltip: '减小字号',
+                        onPressed: controller.decreaseFontSize,
+                        icon: const Icon(Icons.text_decrease),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(controller.fontSize.round().toString()),
+                        ),
+                      ),
+                      IconButton(
+                        key: const Key('reader-font-increase-button'),
+                        tooltip: '增大字号',
+                        onPressed: controller.increaseFontSize,
+                        icon: const Icon(Icons.text_increase),
+                      ),
+                    ],
+                  ),
+                ),
+                _SettingsTitle(
+                  title: '背景',
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final option in _backgroundOptions)
+                        ChoiceChip(
+                          label: Text(option.label),
+                          selected: preferences.backgroundTheme == option.theme,
+                          onSelected: (_) {
+                            controller.setBackgroundTheme(option.theme);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                _SettingsTitle(
+                  title: '翻页',
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final option in _pageTurnOptions)
+                        ChoiceChip(
+                          label: Text(option.label),
+                          selected: preferences.pageTurnMode == option.mode,
+                          onSelected: (_) {
+                            controller.setPageTurnMode(option.mode);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                _SettingsTitle(
+                  title: '其他',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('行距'),
+                      Slider(
+                        key: const Key('reader-line-height-slider'),
+                        min: ReaderController.minLineHeight,
+                        max: ReaderController.maxLineHeight,
+                        divisions: 6,
+                        value: preferences.lineHeight,
+                        onChanged: controller.setLineHeight,
+                      ),
+                      const Text('段距'),
+                      Slider(
+                        key: const Key('reader-paragraph-spacing-slider'),
+                        min: ReaderController.minParagraphSpacing,
+                        max: ReaderController.maxParagraphSpacing,
+                        divisions: 6,
+                        value: preferences.paragraphSpacing,
+                        onChanged: controller.setParagraphSpacing,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SettingsTitle extends StatelessWidget {
+  const _SettingsTitle({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _BackgroundOption {
+  const _BackgroundOption(this.label, this.theme);
+
+  final String label;
+  final ReaderBackgroundTheme theme;
+}
+
+const _backgroundOptions = [
+  _BackgroundOption('纸白', ReaderBackgroundTheme.paperWhite),
+  _BackgroundOption('米色', ReaderBackgroundTheme.warmBeige),
+  _BackgroundOption('护眼绿', ReaderBackgroundTheme.eyeCareGreen),
+  _BackgroundOption('淡蓝', ReaderBackgroundTheme.lightBlue),
+  _BackgroundOption('深灰', ReaderBackgroundTheme.darkGray),
+  _BackgroundOption('纯黑', ReaderBackgroundTheme.pureBlack),
+];
+
+class _PageTurnOption {
+  const _PageTurnOption(this.label, this.mode);
+
+  final String label;
+  final ReaderPageTurnMode mode;
+}
+
+const _pageTurnOptions = [
+  _PageTurnOption('仿真', ReaderPageTurnMode.simulation),
+  _PageTurnOption('覆盖', ReaderPageTurnMode.cover),
+  _PageTurnOption('平移', ReaderPageTurnMode.slide),
+  _PageTurnOption('上下', ReaderPageTurnMode.vertical),
+  _PageTurnOption('无动画', ReaderPageTurnMode.none),
+];
 
 class _ReaderNotFound extends StatelessWidget {
   const _ReaderNotFound();

@@ -132,6 +132,142 @@ void main() {
     },
   );
 
+  testWidgets('settings action opens the reader settings panel', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('reader-settings-sheet')), findsOneWidget);
+    expect(find.text('亮度'), findsOneWidget);
+    expect(find.text('护眼模式'), findsOneWidget);
+    expect(find.text('字号'), findsOneWidget);
+    expect(find.text('背景'), findsOneWidget);
+    expect(find.text('翻页'), findsOneWidget);
+    expect(find.text('其他'), findsOneWidget);
+  });
+
+  testWidgets('settings font controls update reading text size', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-font-increase-button')));
+    await tester.pumpAndSettle();
+
+    final textView = tester.widget<ReadingTextView>(
+      find.byType(ReadingTextView),
+    );
+    expect(textView.fontSize, 22);
+  });
+
+  testWidgets('settings background selection persists reader background', (
+    tester,
+  ) async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    await tester.pumpWidget(
+      _app(_controller(preferencesRepository: preferencesRepository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('护眼绿'));
+    await tester.pumpAndSettle();
+
+    expect(
+      preferencesRepository.saved.last.backgroundTheme,
+      ReaderBackgroundTheme.eyeCareGreen,
+    );
+  });
+
+  testWidgets('settings eye protection toggle changes reader presentation', (
+    tester,
+  ) async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    await tester.pumpWidget(
+      _app(_controller(preferencesRepository: preferencesRepository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-eye-protection-switch')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('reader-eye-protection-overlay')),
+      findsOneWidget,
+    );
+    expect(preferencesRepository.saved.last.eyeProtectionEnabled, isTrue);
+  });
+
+  testWidgets('settings layout sliders update reading layout values', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+
+    tester
+        .widget<Slider>(find.byKey(const Key('reader-line-height-slider')))
+        .onChanged!
+        .call(2.0);
+    tester
+        .widget<Slider>(
+          find.byKey(const Key('reader-paragraph-spacing-slider')),
+        )
+        .onChanged!
+        .call(30);
+    await tester.pumpAndSettle();
+
+    final textView = tester.widget<ReadingTextView>(
+      find.byType(ReadingTextView),
+    );
+    expect(textView.lineHeight, 2.0);
+    expect(textView.paragraphSpacing, 30);
+  });
+
+  testWidgets('settings page turn mode selection persists selected mode', (
+    tester,
+  ) async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    await tester.pumpWidget(
+      _app(_controller(preferencesRepository: preferencesRepository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('覆盖'));
+    await tester.pumpAndSettle();
+
+    expect(
+      preferencesRepository.saved.last.pageTurnMode,
+      ReaderPageTurnMode.cover,
+    );
+  });
+
   testWidgets('reader-renders-epub-image-page-chapters-as-images', (
     tester,
   ) async {

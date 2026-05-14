@@ -43,6 +43,10 @@ class ReaderController extends ChangeNotifier {
   static const double minFontSize = 16;
   static const double maxFontSize = 28;
   static const double defaultFontSize = 20;
+  static const double minLineHeight = 1.2;
+  static const double maxLineHeight = 2.4;
+  static const double minParagraphSpacing = 0;
+  static const double maxParagraphSpacing = 36;
 
   final String _bookId;
   final LocalBookRepository _bookRepository;
@@ -198,6 +202,46 @@ class ReaderController extends ChangeNotifier {
         backgroundTheme: ReaderBackgroundTheme.pureBlack,
       );
     }
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
+  Future<void> setBackgroundTheme(ReaderBackgroundTheme theme) {
+    _readerPreferences = _readerPreferences.copyWith(
+      backgroundTheme: theme,
+      previousBackgroundTheme: theme,
+      nightModeEnabled: false,
+    );
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
+  Future<void> setEyeProtectionEnabled(bool value) {
+    _readerPreferences = _readerPreferences.copyWith(
+      eyeProtectionEnabled: value,
+    );
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
+  Future<void> setLineHeight(double value) {
+    _readerPreferences = _readerPreferences.copyWith(
+      lineHeight: value.clamp(minLineHeight, maxLineHeight),
+    );
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
+  Future<void> setParagraphSpacing(double value) {
+    _readerPreferences = _readerPreferences.copyWith(
+      paragraphSpacing: value.clamp(minParagraphSpacing, maxParagraphSpacing),
+    );
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
+  Future<void> setPageTurnMode(ReaderPageTurnMode mode) {
+    _readerPreferences = _readerPreferences.copyWith(pageTurnMode: mode);
     notifyListeners();
     return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
   }
