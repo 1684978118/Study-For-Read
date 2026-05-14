@@ -33,7 +33,7 @@ This milestone does not:
 6. `M11-F06-T01-mobile-reader-text-hitbox-polish.md`
 7. `M11-F07-T01-mobile-reader-controls-occlusion-polish.md`
 
-Add later task cards only after the next emulator acceptance pass finds a concrete issue.
+Further Reader changes that require pagination, persistent reading preferences, native brightness, or hardware key handling should move to `docs/plans/M12_MOBILE_TOMATO_READER.md` instead of staying as M11 polish.
 
 ## Acceptance Method
 
