@@ -229,9 +229,7 @@ class _ReaderControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final book = controller.book!;
     final chapter = controller.currentChapter!;
-    final surface = Theme.of(
-      context,
-    ).colorScheme.surface.withValues(alpha: 0.94);
+    final surface = Theme.of(context).colorScheme.surface;
 
     return SafeArea(
       child: Column(

@@ -132,6 +132,31 @@ void main() {
     expect(readingTop, greaterThan(controlBottom + 16));
   });
 
+  testWidgets('visible controls use opaque surfaces over reading text', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.ancestor(
+        of: find.byKey(const Key('reader-close-button')),
+        matching: find.byWidgetPredicate(_isOpaqueContainer),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.ancestor(
+        of: find.byKey(const Key('reader-font-size-slider')),
+        matching: find.byWidgetPredicate(_isOpaqueContainer),
+      ),
+      findsWidgets,
+    );
+  });
+
   testWidgets('next and previous update chapter text and save progress', (
     tester,
   ) async {
@@ -218,6 +243,14 @@ void main() {
     expect(find.text('未找到本地书籍'), findsOneWidget);
     expect(find.text('first chapter text'), findsNothing);
   });
+}
+
+bool _isOpaqueContainer(Widget widget) {
+  if (widget is! Container) {
+    return false;
+  }
+  final color = widget.color;
+  return color != null && color.a == 1;
 }
 
 Widget _app(ReaderController controller, {VoidCallback? onClose}) {

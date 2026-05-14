@@ -31,6 +31,7 @@ This milestone does not:
 4. `M11-F04-T01-mobile-emulator-chinese-visual-acceptance.md`
 5. `M11-F05-T01-mobile-epub-image-page-render.md`
 6. `M11-F06-T01-mobile-reader-text-hitbox-polish.md`
+7. `M11-F07-T01-mobile-reader-controls-occlusion-polish.md`
 
 Add later task cards only after the next emulator acceptance pass finds a concrete issue.
 
