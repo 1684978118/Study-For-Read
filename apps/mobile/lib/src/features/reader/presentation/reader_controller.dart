@@ -69,6 +69,7 @@ class ReaderController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get notFound => _notFound;
   LocalBook? get book => _book;
+  List<LocalChapter> get chapters => List.unmodifiable(_chapters);
   LocalChapter? get currentChapter =>
       _chapters.isEmpty ? null : _chapters[_currentChapterIndex];
   int get currentChapterIndex => _currentChapterIndex;
@@ -156,6 +157,18 @@ class ReaderController extends ChangeNotifier {
     await saveProgress();
   }
 
+  Future<void> goToChapter(int chapterIndex) async {
+    if (chapterIndex < 0 || chapterIndex >= _chapters.length) {
+      return;
+    }
+    if (chapterIndex == _currentChapterIndex) {
+      return;
+    }
+    _currentChapterIndex = chapterIndex;
+    notifyListeners();
+    await saveProgress();
+  }
+
   Future<void> setFontSize(double value) {
     _fontSize = value.clamp(minFontSize, maxFontSize);
     _readerPreferences = _readerPreferences.copyWith(fontSize: _fontSize);
@@ -169,6 +182,24 @@ class ReaderController extends ChangeNotifier {
 
   Future<void> decreaseFontSize() {
     return setFontSize(_fontSize - 2);
+  }
+
+  Future<void> toggleNightMode() {
+    final current = _readerPreferences;
+    if (current.nightModeEnabled) {
+      _readerPreferences = current.copyWith(
+        nightModeEnabled: false,
+        backgroundTheme: current.previousBackgroundTheme,
+      );
+    } else {
+      _readerPreferences = current.copyWith(
+        nightModeEnabled: true,
+        previousBackgroundTheme: current.backgroundTheme,
+        backgroundTheme: ReaderBackgroundTheme.pureBlack,
+      );
+    }
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
   }
 
   Future<void> saveProgress() async {

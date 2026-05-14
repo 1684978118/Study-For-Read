@@ -30,23 +30,32 @@ void main() {
     expect(controller.currentChapter, isNull);
   });
 
-  test('next and previous chapters save dirty local reading position', () async {
-    final positionRepository = _FakeReadingPositionRepository(
-      saved: _position(chapterIndex: 0),
-    );
-    final controller = _controller(positionRepository: positionRepository);
+  test(
+    'next and previous chapters save dirty local reading position',
+    () async {
+      final positionRepository = _FakeReadingPositionRepository(
+        saved: _position(chapterIndex: 0),
+      );
+      final controller = _controller(positionRepository: positionRepository);
 
-    await controller.load();
-    await controller.nextChapter();
-    await controller.previousChapter();
+      await controller.load();
+      await controller.nextChapter();
+      await controller.previousChapter();
 
-    expect(controller.currentChapterIndex, 0);
-    expect(positionRepository.savedPositions, hasLength(2));
-    expect(positionRepository.savedPositions.first.currentChapterIndex, 1);
-    expect(positionRepository.savedPositions.first.progressSyncStatus, 'dirty');
-    expect(positionRepository.savedPositions.last.currentChapterIndex, 0);
-    expect(positionRepository.savedPositions.last.progressSyncStatus, 'dirty');
-  });
+      expect(controller.currentChapterIndex, 0);
+      expect(positionRepository.savedPositions, hasLength(2));
+      expect(positionRepository.savedPositions.first.currentChapterIndex, 1);
+      expect(
+        positionRepository.savedPositions.first.progressSyncStatus,
+        'dirty',
+      );
+      expect(positionRepository.savedPositions.last.currentChapterIndex, 0);
+      expect(
+        positionRepository.savedPositions.last.progressSyncStatus,
+        'dirty',
+      );
+    },
+  );
 
   test('chapter navigation is bounded by first and last chapters', () async {
     final controller = _controller(savedChapterIndex: 0);
@@ -62,6 +71,42 @@ void main() {
     expect(controller.currentChapterIndex, 2);
     expect(controller.canGoPrevious, isTrue);
     expect(controller.canGoNext, isFalse);
+  });
+
+  test(
+    'goToChapter jumps to a valid chapter and saves dirty progress',
+    () async {
+      final positionRepository = _FakeReadingPositionRepository(
+        saved: _position(chapterIndex: 0),
+      );
+      final controller = _controller(positionRepository: positionRepository);
+
+      await controller.load();
+      await controller.goToChapter(2);
+
+      expect(controller.currentChapterIndex, 2);
+      expect(controller.currentChapter?.title, 'Chapter 3');
+      expect(positionRepository.savedPositions.single.currentChapterIndex, 2);
+      expect(
+        positionRepository.savedPositions.single.progressSyncStatus,
+        'dirty',
+      );
+    },
+  );
+
+  test('goToChapter ignores invalid chapter indexes', () async {
+    final positionRepository = _FakeReadingPositionRepository(
+      saved: _position(chapterIndex: 1),
+    );
+    final controller = _controller(positionRepository: positionRepository);
+
+    await controller.load();
+    await controller.goToChapter(99);
+    await controller.goToChapter(-1);
+
+    expect(controller.currentChapterIndex, 1);
+    expect(controller.currentChapter?.title, 'Chapter 2');
+    expect(positionRepository.savedPositions, isEmpty);
   });
 
   test('font size changes stay within configured min and max', () async {
@@ -104,6 +149,43 @@ void main() {
 
     expect(preferencesRepository.saved.single.fontSize, 24);
   });
+
+  test(
+    'toggleNightMode persists dark mode and restores previous background',
+    () async {
+      final preferencesRepository = _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(
+          backgroundTheme: ReaderBackgroundTheme.warmBeige,
+          previousBackgroundTheme: ReaderBackgroundTheme.eyeCareGreen,
+        ),
+      );
+      final controller = _controller(
+        preferencesRepository: preferencesRepository,
+      );
+
+      await controller.load();
+      await controller.toggleNightMode();
+
+      expect(controller.readerPreferences.nightModeEnabled, isTrue);
+      expect(
+        controller.readerPreferences.backgroundTheme,
+        ReaderBackgroundTheme.pureBlack,
+      );
+      expect(
+        controller.readerPreferences.previousBackgroundTheme,
+        ReaderBackgroundTheme.warmBeige,
+      );
+
+      await controller.toggleNightMode();
+
+      expect(controller.readerPreferences.nightModeEnabled, isFalse);
+      expect(
+        controller.readerPreferences.backgroundTheme,
+        ReaderBackgroundTheme.warmBeige,
+      );
+      expect(preferencesRepository.saved, hasLength(2));
+    },
+  );
 }
 
 ReaderController _controller({
@@ -115,7 +197,9 @@ ReaderController _controller({
 }) {
   return ReaderController(
     bookId: 'book-1',
-    bookRepository: _FakeBookRepository(book: missingBook ? null : book ?? _book()),
+    bookRepository: _FakeBookRepository(
+      book: missingBook ? null : book ?? _book(),
+    ),
     chapterRepository: _FakeChapterRepository(chapters: _chapters()),
     positionRepository:
         positionRepository ??

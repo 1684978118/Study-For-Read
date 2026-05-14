@@ -8,6 +8,8 @@ import 'package:study_for_read_mobile/src/features/library/domain/local_book.dar
 import 'package:study_for_read_mobile/src/features/library/domain/local_chapter.dart';
 import 'package:study_for_read_mobile/src/features/library/domain/local_reading_position.dart';
 import 'package:study_for_read_mobile/src/features/reader/data/local_reading_position_repository.dart';
+import 'package:study_for_read_mobile/src/features/reader/data/local_reader_preferences_repository.dart';
+import 'package:study_for_read_mobile/src/features/reader/domain/reader_preferences.dart';
 import 'package:study_for_read_mobile/src/features/reader/presentation/reader_controller.dart';
 import 'package:study_for_read_mobile/src/features/reader/presentation/reader_screen.dart';
 import 'package:study_for_read_mobile/src/features/reader/presentation/reading_text_view.dart';
@@ -24,6 +26,7 @@ void main() {
     expect(find.text('Kokoro'), findsNothing);
     expect(find.text('上一章'), findsNothing);
     expect(find.text('下一章'), findsNothing);
+    expect(find.text('目录'), findsNothing);
   });
 
   testWidgets('reader displays text paragraphs with a first-line indent', (
@@ -49,14 +52,85 @@ void main() {
     expect(find.text('上一章'), findsOneWidget);
     expect(find.text('下一章'), findsOneWidget);
     expect(find.text('1 / 3'), findsOneWidget);
-    expect(find.byKey(const Key('reader-font-size-slider')), findsOneWidget);
+    expect(
+      find.byKey(const Key('reader-chapter-progress-slider')),
+      findsOneWidget,
+    );
+    expect(find.text('目录'), findsOneWidget);
+    expect(find.text('夜间'), findsOneWidget);
+    expect(find.text('设置'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('reader-tap-area')));
     await tester.pumpAndSettle();
 
     expect(find.text('上一章'), findsNothing);
     expect(find.text('下一章'), findsNothing);
+    expect(find.text('目录'), findsNothing);
   });
+
+  testWidgets(
+    'directory lists real chapters and jumps to the selected chapter',
+    (tester) async {
+      final positionRepository = _FakeReadingPositionRepository(
+        saved: _position(chapterIndex: 0),
+      );
+      await tester.pumpWidget(
+        _app(_controller(positionRepository: positionRepository)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reader-tap-area')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('目录'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('reader-directory-sheet')), findsOneWidget);
+      expect(find.text('Chapter 1'), findsWidgets);
+      expect(find.text('Chapter 2'), findsOneWidget);
+      expect(find.text('Chapter 3'), findsOneWidget);
+
+      await tester.tap(find.text('Chapter 3'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('third chapter text'), findsOneWidget);
+      expect(positionRepository.savedPositions.single.currentChapterIndex, 2);
+      expect(
+        positionRepository.savedPositions.single.progressSyncStatus,
+        'dirty',
+      );
+    },
+  );
+
+  testWidgets(
+    'night action persists night mode and changes reader presentation',
+    (tester) async {
+      final preferencesRepository = _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(
+          backgroundTheme: ReaderBackgroundTheme.warmBeige,
+        ),
+      );
+      await tester.pumpWidget(
+        _app(_controller(preferencesRepository: preferencesRepository)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reader-tap-area')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('夜间'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('日间'), findsOneWidget);
+      expect(
+        find.byKey(const Key('reader-night-mode-background')),
+        findsOneWidget,
+      );
+      expect(preferencesRepository.saved.single.nightModeEnabled, isTrue);
+      expect(
+        preferencesRepository.saved.single.backgroundTheme,
+        ReaderBackgroundTheme.pureBlack,
+      );
+    },
+  );
 
   testWidgets('reader-renders-epub-image-page-chapters-as-images', (
     tester,
@@ -150,7 +224,7 @@ void main() {
     );
     expect(
       find.ancestor(
-        of: find.byKey(const Key('reader-font-size-slider')),
+        of: find.byKey(const Key('reader-chapter-progress-slider')),
         matching: find.byWidgetPredicate(_isOpaqueContainer),
       ),
       findsWidgets,
@@ -209,31 +283,27 @@ void main() {
     expect(next.onPressed, isNull);
   });
 
-  testWidgets('font size control changes reading text size within bounds', (
+  testWidgets('bottom progress slider jumps to chapters within bounds', (
     tester,
   ) async {
-    await tester.pumpWidget(_app(_controller()));
+    final positionRepository = _FakeReadingPositionRepository(
+      saved: _position(chapterIndex: 0),
+    );
+    await tester.pumpWidget(
+      _app(_controller(positionRepository: positionRepository)),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('reader-tap-area')));
     await tester.pumpAndSettle();
 
     await tester.drag(
-      find.byKey(const Key('reader-font-size-slider')),
+      find.byKey(const Key('reader-chapter-progress-slider')),
       const Offset(500, 0),
     );
     await tester.pumpAndSettle();
 
-    var textView = tester.widget<ReadingTextView>(find.byType(ReadingTextView));
-    expect(textView.fontSize, ReaderController.maxFontSize);
-
-    await tester.drag(
-      find.byKey(const Key('reader-font-size-slider')),
-      const Offset(-500, 0),
-    );
-    await tester.pumpAndSettle();
-
-    textView = tester.widget<ReadingTextView>(find.byType(ReadingTextView));
-    expect(textView.fontSize, ReaderController.minFontSize);
+    expect(find.textContaining('third chapter text'), findsOneWidget);
+    expect(positionRepository.savedPositions, isNotEmpty);
   });
 
   testWidgets('missing local book id shows not found state', (tester) async {
@@ -267,6 +337,7 @@ ReaderController _controller({
   bool missingBook = false,
   List<LocalChapter>? chapters,
   _FakeReadingPositionRepository? positionRepository,
+  ReaderPreferencesRepository? preferencesRepository,
 }) {
   return ReaderController(
     bookId: 'book-1',
@@ -277,6 +348,7 @@ ReaderController _controller({
     positionRepository:
         positionRepository ??
         _FakeReadingPositionRepository(saved: _position(chapterIndex: 0)),
+    preferencesRepository: preferencesRepository,
   );
 }
 
@@ -410,5 +482,22 @@ class _FakeReadingPositionRepository implements LocalReadingPositionRepository {
   @override
   Future<void> upsert(LocalReadingPosition position) async {
     savedPositions.add(position);
+  }
+}
+
+class _FakeReaderPreferencesRepository implements ReaderPreferencesRepository {
+  _FakeReaderPreferencesRepository({ReaderPreferences? saved})
+    : _saved = saved ?? ReaderPreferences.defaults;
+
+  ReaderPreferences _saved;
+  final List<ReaderPreferences> saved = [];
+
+  @override
+  Future<ReaderPreferences> load() async => _saved;
+
+  @override
+  Future<void> save(ReaderPreferences preferences) async {
+    _saved = preferences;
+    saved.add(preferences);
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../study/domain/paragraph_selection.dart';
 import '../../study/domain/reader_text_selection.dart';
 import '../../study/presentation/lookup_bottom_sheet.dart';
+import '../domain/reader_preferences.dart';
 import 'reader_controller.dart';
 import 'reading_text_view.dart';
 
@@ -126,33 +127,49 @@ class _ReaderContentState extends State<_ReaderContent> {
           }
 
           final chapter = controller.currentChapter!;
+          final presentation = _ReaderPresentation.fromPreferences(
+            controller.readerPreferences,
+          );
           return Stack(
             children: [
               Positioned.fill(
-                child: GestureDetector(
-                  key: const Key('reader-tap-area'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: widget.onToggleControls,
-                  child: SafeArea(
-                    child: ReadingTextView(
-                      text: chapter.content,
-                      fontSize: controller.fontSize,
-                      padding: widget.showControls
-                          ? const EdgeInsets.fromLTRB(24, 108, 24, 176)
-                          : const EdgeInsets.fromLTRB(24, 44, 24, 56),
-                      onLookup: (selection) {
-                        _openLookup(context, controller, selection);
-                      },
-                      onBlankTap: widget.onToggleControls,
-                      onTranslateParagraph: (selection) {
-                        _translateParagraph(controller, selection);
-                      },
-                      translationStateFor: (selection) {
-                        return controller.paragraphTranslationController
-                            ?.stateFor(
-                              _selectionWithLocation(controller, selection),
-                            );
-                      },
+                child: DecoratedBox(
+                  key: presentation.isNightMode
+                      ? const Key('reader-night-mode-background')
+                      : const Key('reader-reading-background'),
+                  decoration: BoxDecoration(color: presentation.background),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: Theme.of(
+                        context,
+                      ).colorScheme.copyWith(onSurface: presentation.textColor),
+                    ),
+                    child: GestureDetector(
+                      key: const Key('reader-tap-area'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: widget.onToggleControls,
+                      child: SafeArea(
+                        child: ReadingTextView(
+                          text: chapter.content,
+                          fontSize: controller.fontSize,
+                          padding: widget.showControls
+                              ? const EdgeInsets.fromLTRB(24, 108, 24, 188)
+                              : const EdgeInsets.fromLTRB(24, 44, 24, 56),
+                          onLookup: (selection) {
+                            _openLookup(context, controller, selection);
+                          },
+                          onBlankTap: widget.onToggleControls,
+                          onTranslateParagraph: (selection) {
+                            _translateParagraph(controller, selection);
+                          },
+                          translationStateFor: (selection) {
+                            return controller.paragraphTranslationController
+                                ?.stateFor(
+                                  _selectionWithLocation(controller, selection),
+                                );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -230,6 +247,14 @@ class _ReaderControls extends StatelessWidget {
     final book = controller.book!;
     final chapter = controller.currentChapter!;
     final surface = Theme.of(context).colorScheme.surface;
+    final chapterCount = controller.chapters.length;
+    final sliderMax = chapterCount <= 1 ? 1.0 : (chapterCount - 1).toDouble();
+    final currentSliderValue = controller.currentChapterIndex
+        .clamp(0, sliderMax.toInt())
+        .toDouble();
+    final nightLabel = controller.readerPreferences.nightModeEnabled
+        ? '日间'
+        : '夜间';
 
     return SafeArea(
       child: Column(
@@ -266,7 +291,7 @@ class _ReaderControls extends StatelessWidget {
           const Spacer(),
           Container(
             color: surface,
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -279,7 +304,27 @@ class _ReaderControls extends StatelessWidget {
                       child: const Text('上一章'),
                     ),
                     Expanded(
-                      child: Center(child: Text(controller.progressLabel)),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Slider(
+                            key: const Key('reader-chapter-progress-slider'),
+                            min: 0,
+                            max: sliderMax,
+                            divisions: chapterCount > 1
+                                ? chapterCount - 1
+                                : null,
+                            value: currentSliderValue,
+                            label: controller.progressLabel,
+                            onChanged: chapterCount > 1
+                                ? (value) {
+                                    controller.goToChapter(value.round());
+                                  }
+                                : null,
+                          ),
+                          Text(controller.progressLabel),
+                        ],
+                      ),
                     ),
                     TextButton(
                       onPressed: controller.canGoNext
@@ -289,20 +334,68 @@ class _ReaderControls extends StatelessWidget {
                     ),
                   ],
                 ),
-                Slider(
-                  key: const Key('reader-font-size-slider'),
-                  min: ReaderController.minFontSize,
-                  max: ReaderController.maxFontSize,
-                  divisions: 6,
-                  value: controller.fontSize,
-                  label: controller.fontSize.round().toString(),
-                  onChanged: controller.setFontSize,
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    TextButton.icon(
+                      key: const Key('reader-directory-button'),
+                      onPressed: () => _showDirectory(context),
+                      icon: const Icon(Icons.format_list_bulleted),
+                      label: const Text('目录'),
+                    ),
+                    TextButton.icon(
+                      key: const Key('reader-night-toggle-button'),
+                      onPressed: controller.toggleNightMode,
+                      icon: Icon(
+                        controller.readerPreferences.nightModeEnabled
+                            ? Icons.wb_sunny_outlined
+                            : Icons.nightlight_round,
+                      ),
+                      label: Text(nightLabel),
+                    ),
+                    TextButton.icon(
+                      key: const Key('reader-settings-button'),
+                      onPressed: () {},
+                      icon: const Icon(Icons.tune),
+                      label: const Text('设置'),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showDirectory(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          key: const Key('reader-directory-sheet'),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: controller.chapters.length,
+            itemBuilder: (context, index) {
+              final chapter = controller.chapters[index];
+              final isCurrent = index == controller.currentChapterIndex;
+              return ListTile(
+                selected: isCurrent,
+                leading: Text('${index + 1}'),
+                title: Text(chapter.title),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await controller.goToChapter(index);
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -317,14 +410,42 @@ class _ReaderNotFound extends StatelessWidget {
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('阅读器'),
-              SizedBox(height: 8),
-              Text('未找到本地书籍'),
-            ],
+            children: [Text('阅读器'), SizedBox(height: 8), Text('未找到本地书籍')],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ReaderPresentation {
+  const _ReaderPresentation({
+    required this.background,
+    required this.textColor,
+    required this.isNightMode,
+  });
+
+  final Color background;
+  final Color textColor;
+  final bool isNightMode;
+
+  static _ReaderPresentation fromPreferences(ReaderPreferences preferences) {
+    final background = switch (preferences.backgroundTheme) {
+      ReaderBackgroundTheme.paperWhite => const Color(0xFFFAF7F0),
+      ReaderBackgroundTheme.warmBeige => const Color(0xFFF3E4C8),
+      ReaderBackgroundTheme.eyeCareGreen => const Color(0xFFDCE8D2),
+      ReaderBackgroundTheme.lightBlue => const Color(0xFFDCE9F4),
+      ReaderBackgroundTheme.darkGray => const Color(0xFF303030),
+      ReaderBackgroundTheme.pureBlack => Colors.black,
+    };
+    final isDark =
+        preferences.nightModeEnabled ||
+        preferences.backgroundTheme == ReaderBackgroundTheme.darkGray ||
+        preferences.backgroundTheme == ReaderBackgroundTheme.pureBlack;
+    return _ReaderPresentation(
+      background: background,
+      textColor: isDark ? const Color(0xFFE6E1D8) : const Color(0xFF25211A),
+      isNightMode: preferences.nightModeEnabled,
     );
   }
 }
