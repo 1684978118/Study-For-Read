@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../study/domain/paragraph_selection.dart';
@@ -14,6 +15,7 @@ class ReadingTextView extends StatelessWidget {
     required this.fontSize,
     this.padding = const EdgeInsets.fromLTRB(24, 44, 24, 56),
     this.onLookup,
+    this.onBlankTap,
     this.onTranslateParagraph,
     this.translationStateFor,
   });
@@ -22,6 +24,7 @@ class ReadingTextView extends StatelessWidget {
   final double fontSize;
   final EdgeInsetsGeometry padding;
   final ValueChanged<ReaderTextSelection>? onLookup;
+  final VoidCallback? onBlankTap;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
   final ParagraphTranslationState? Function(ParagraphSelection selection)?
   translationStateFor;
@@ -39,6 +42,7 @@ class ReadingTextView extends StatelessWidget {
               paragraph: paragraph,
               fontSize: fontSize,
               onLookup: onLookup,
+              onBlankTap: onBlankTap,
               onTranslateParagraph: onTranslateParagraph,
               translationStateFor: translationStateFor,
             ),
@@ -68,6 +72,7 @@ class _ParagraphView extends StatelessWidget {
     required this.paragraph,
     required this.fontSize,
     this.onLookup,
+    this.onBlankTap,
     this.onTranslateParagraph,
     this.translationStateFor,
   });
@@ -75,6 +80,7 @@ class _ParagraphView extends StatelessWidget {
   final _Paragraph paragraph;
   final double fontSize;
   final ValueChanged<ReaderTextSelection>? onLookup;
+  final VoidCallback? onBlankTap;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
   final ParagraphTranslationState? Function(ParagraphSelection selection)?
   translationStateFor;
@@ -111,43 +117,47 @@ class _ParagraphView extends StatelessWidget {
               style: textStyle,
               maxWidth: constraints.maxWidth,
             );
-            return SizedBox(
-              width: constraints.maxWidth,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: onLookup == null
-                        ? null
-                        : () => onLookup!(_lookupSelection()),
-                    child: Text(paragraph.text, style: textStyle),
-                  ),
-                  Positioned(
-                    left: hotspotOffset.dx,
-                    top: hotspotOffset.dy,
-                    child: GestureDetector(
-                      key: Key(
-                        'paragraph-translate-hotspot-${paragraph.index}',
-                      ),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: onTranslateParagraph == null
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: onBlankTap,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    _LookupParagraphText(
+                      text: paragraph.displayText,
+                      style: textStyle,
+                      onTap: onLookup == null
                           ? null
-                          : () => onTranslateParagraph!(selection),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(6, 0, 18, 4),
-                        child: Text(
-                          '+',
-                          style: textStyle.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.22),
+                          : () => onLookup!(_lookupSelection()),
+                    ),
+                    Positioned(
+                      left: hotspotOffset.dx,
+                      top: hotspotOffset.dy,
+                      child: GestureDetector(
+                        key: Key(
+                          'paragraph-translate-hotspot-${paragraph.index}',
+                        ),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: onTranslateParagraph == null
+                            ? null
+                            : () => onTranslateParagraph!(selection),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(6, 0, 18, 4),
+                          child: Text(
+                            '+',
+                            style: textStyle.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.22),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -176,7 +186,7 @@ class _ParagraphView extends StatelessWidget {
     required double maxWidth,
   }) {
     final textPainter = TextPainter(
-      text: TextSpan(text: paragraph.text, style: style),
+      text: TextSpan(text: paragraph.displayText, style: style),
       textDirection: Directionality.of(context),
       maxLines: null,
     )..layout(maxWidth: maxWidth);
@@ -217,6 +227,8 @@ class _Paragraph {
   final int index;
   final String text;
 
+  String get displayText => '\u3000$text';
+
   Uri? get epubImageUri {
     final match = RegExp(
       r'^!\[epub-image\]\((file://[^)]+)\)$',
@@ -226,6 +238,49 @@ class _Paragraph {
       return null;
     }
     return Uri.tryParse(value);
+  }
+}
+
+class _LookupParagraphText extends StatefulWidget {
+  const _LookupParagraphText({
+    required this.text,
+    required this.style,
+    required this.onTap,
+  });
+
+  final String text;
+  final TextStyle style;
+  final VoidCallback? onTap;
+
+  @override
+  State<_LookupParagraphText> createState() => _LookupParagraphTextState();
+}
+
+class _LookupParagraphTextState extends State<_LookupParagraphText> {
+  late final TapGestureRecognizer _recognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _recognizer = TapGestureRecognizer();
+  }
+
+  @override
+  void dispose() {
+    _recognizer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _recognizer.onTap = widget.onTap;
+    return Text.rich(
+      TextSpan(
+        text: widget.text,
+        style: widget.style,
+        recognizer: widget.onTap == null ? null : _recognizer,
+      ),
+    );
   }
 }
 

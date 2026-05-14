@@ -21,7 +21,7 @@ void main() {
     await tester.pumpWidget(_app(_controller(content: paragraph)));
     await tester.pumpAndSettle();
 
-    final paragraphLeft = tester.getTopLeft(find.text(paragraph)).dx;
+    final paragraphLeft = tester.getTopLeft(find.textContaining(paragraph)).dx;
     final hotspotLeft = tester
         .getTopLeft(find.byKey(const Key('paragraph-translate-hotspot-0')))
         .dx;

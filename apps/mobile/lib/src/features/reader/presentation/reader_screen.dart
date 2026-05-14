@@ -143,6 +143,7 @@ class _ReaderContentState extends State<_ReaderContent> {
                       onLookup: (selection) {
                         _openLookup(context, controller, selection);
                       },
+                      onBlankTap: widget.onToggleControls,
                       onTranslateParagraph: (selection) {
                         _translateParagraph(controller, selection);
                       },

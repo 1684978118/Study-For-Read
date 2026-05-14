@@ -19,11 +19,20 @@ void main() {
     await tester.pumpWidget(_app(_controller()));
     await tester.pumpAndSettle();
 
-    expect(find.text('first chapter text'), findsOneWidget);
+    expect(find.textContaining('first chapter text'), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
     expect(find.text('Kokoro'), findsNothing);
     expect(find.text('上一章'), findsNothing);
     expect(find.text('下一章'), findsNothing);
+  });
+
+  testWidgets('reader displays text paragraphs with a first-line indent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('\u3000first chapter text'), findsOneWidget);
   });
 
   testWidgets('tap blank reading space toggles temporary controls', (
@@ -116,7 +125,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final controlBottom = tester.getBottomLeft(find.text('Chapter 1')).dy;
-    final readingTop = tester.getTopLeft(find.text('first chapter text')).dy;
+    final readingTop = tester
+        .getTopLeft(find.textContaining('first chapter text'))
+        .dy;
 
     expect(readingTop, greaterThan(controlBottom + 16));
   });
@@ -137,14 +148,14 @@ void main() {
     await tester.tap(find.text('下一章'));
     await tester.pumpAndSettle();
 
-    expect(find.text('second chapter text'), findsOneWidget);
+    expect(find.textContaining('second chapter text'), findsOneWidget);
     expect(positionRepository.savedPositions.last.currentChapterIndex, 1);
     expect(positionRepository.savedPositions.last.progressSyncStatus, 'dirty');
 
     await tester.tap(find.text('上一章'));
     await tester.pumpAndSettle();
 
-    expect(find.text('first chapter text'), findsOneWidget);
+    expect(find.textContaining('first chapter text'), findsOneWidget);
     expect(positionRepository.savedPositions.last.currentChapterIndex, 0);
     expect(positionRepository.savedPositions.last.progressSyncStatus, 'dirty');
   });

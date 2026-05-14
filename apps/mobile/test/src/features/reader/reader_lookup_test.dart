@@ -52,6 +52,43 @@ void main() {
     );
   });
 
+  testWidgets(
+    'tap blank space beside paragraph toggles controls instead of lookup',
+    (tester) async {
+      final lookupController = _FakeLookupController();
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _app(
+          _controller(
+            lookupController: lookupController,
+            content:
+                'This paragraph is long enough to wrap across multiple reader '
+                'lines before ending with a short tail.',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final paragraphRect = tester.getRect(
+        find.textContaining('short tail.'),
+      );
+      await tester.tapAt(
+        Offset(
+          paragraphRect.right - 16,
+          paragraphRect.bottom - 18,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(lookupController.selections, isEmpty);
+      expect(find.text('Kokoro'), findsOneWidget);
+    },
+  );
+
   testWidgets('provider unavailable shows error sheet and reader remains usable', (
     tester,
   ) async {
@@ -89,11 +126,14 @@ Widget _app(ReaderController controller) {
   return MaterialApp(home: ReaderScreen(bookId: 'book-1', controller: controller));
 }
 
-ReaderController _controller({_FakeLookupController? lookupController}) {
+ReaderController _controller({
+  _FakeLookupController? lookupController,
+  String? content,
+}) {
   return ReaderController(
     bookId: 'book-1',
     bookRepository: _FakeBookRepository(book: _book()),
-    chapterRepository: _FakeChapterRepository(chapters: _chapters()),
+    chapterRepository: _FakeChapterRepository(chapters: _chapters(content)),
     positionRepository: _FakeReadingPositionRepository(saved: _position()),
     lookupController: lookupController ?? _FakeLookupController(),
   );
@@ -121,8 +161,22 @@ LocalBook _book() {
   );
 }
 
-List<LocalChapter> _chapters() {
+List<LocalChapter> _chapters([String? content]) {
   final now = DateTime.utc(2026, 5, 8);
+  if (content != null) {
+    return [
+      LocalChapter(
+        id: 'chapter-1',
+        bookId: 'book-1',
+        chapterIndex: 0,
+        title: 'Chapter 1',
+        content: content,
+        paragraphCount: 1,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ];
+  }
   return [
     LocalChapter(
       id: 'chapter-1',
