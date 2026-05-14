@@ -66,6 +66,8 @@ class ReaderController extends ChangeNotifier {
   LocalBook? _book;
   List<LocalChapter> _chapters = const [];
   int _currentChapterIndex = 0;
+  int _currentPageIndex = 0;
+  int _currentPageCount = 1;
   double _fontSize = defaultFontSize;
   ReaderPreferences _readerPreferences = ReaderPreferences.defaults;
   String? _positionId;
@@ -79,6 +81,8 @@ class ReaderController extends ChangeNotifier {
   LocalChapter? get currentChapter =>
       _chapters.isEmpty ? null : _chapters[_currentChapterIndex];
   int get currentChapterIndex => _currentChapterIndex;
+  int get currentPageIndex => _currentPageIndex;
+  int get currentPageCount => _currentPageCount;
   double get fontSize => _fontSize;
   ReaderPreferences get readerPreferences => _readerPreferences;
   bool get canGoPrevious => _currentChapterIndex > 0;
@@ -139,6 +143,7 @@ class ReaderController extends ChangeNotifier {
       0,
       chapters.length - 1,
     );
+    _resetPageState();
     _readerPreferences = preferences;
     _fontSize = preferences.fontSize.clamp(minFontSize, maxFontSize);
     _isLoading = false;
@@ -150,6 +155,7 @@ class ReaderController extends ChangeNotifier {
       return;
     }
     _currentChapterIndex += 1;
+    _resetPageState();
     notifyListeners();
     await saveProgress();
   }
@@ -159,6 +165,7 @@ class ReaderController extends ChangeNotifier {
       return;
     }
     _currentChapterIndex -= 1;
+    _resetPageState();
     notifyListeners();
     await saveProgress();
   }
@@ -171,8 +178,52 @@ class ReaderController extends ChangeNotifier {
       return;
     }
     _currentChapterIndex = chapterIndex;
+    _resetPageState();
     notifyListeners();
     await saveProgress();
+  }
+
+  void setPageCount(int pageCount) {
+    final boundedPageCount = pageCount < 1 ? 1 : pageCount;
+    final boundedPageIndex = _currentPageIndex.clamp(0, boundedPageCount - 1);
+    if (_currentPageCount == boundedPageCount &&
+        _currentPageIndex == boundedPageIndex) {
+      return;
+    }
+    _currentPageCount = boundedPageCount;
+    _currentPageIndex = boundedPageIndex;
+    notifyListeners();
+  }
+
+  void goToPage(int pageIndex) {
+    if (pageIndex < 0 || pageIndex >= _currentPageCount) {
+      return;
+    }
+    if (_currentPageIndex == pageIndex) {
+      return;
+    }
+    _currentPageIndex = pageIndex;
+    notifyListeners();
+  }
+
+  Future<void> nextPage() async {
+    if (_currentPageIndex < _currentPageCount - 1) {
+      _currentPageIndex += 1;
+      notifyListeners();
+      await saveProgress();
+      return;
+    }
+    await nextChapter();
+  }
+
+  Future<void> previousPage() async {
+    if (_currentPageIndex > 0) {
+      _currentPageIndex -= 1;
+      notifyListeners();
+      await saveProgress();
+      return;
+    }
+    await previousChapter();
   }
 
   Future<void> setFontSize(double value) {
@@ -268,7 +319,7 @@ class ReaderController extends ChangeNotifier {
         id: _positionId ?? _uuidV4(),
         bookId: book.id,
         currentChapterIndex: _currentChapterIndex,
-        currentParagraphIndex: 0,
+        currentParagraphIndex: _currentPageIndex,
         currentCharOffset: 0,
         progressSyncStatus: 'dirty',
         lastReadAt: now,
@@ -337,6 +388,11 @@ class ReaderController extends ChangeNotifier {
     _notFound = true;
     _isLoading = false;
     notifyListeners();
+  }
+
+  void _resetPageState() {
+    _currentPageIndex = 0;
+    _currentPageCount = 1;
   }
 
   @override

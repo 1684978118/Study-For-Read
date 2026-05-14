@@ -155,6 +155,13 @@ class _ReaderContentState extends State<_ReaderContent> {
                           lineHeight: controller.readerPreferences.lineHeight,
                           paragraphSpacing:
                               controller.readerPreferences.paragraphSpacing,
+                          paginated: true,
+                          currentPageIndex: controller.currentPageIndex,
+                          onPageCountChanged: controller.setPageCount,
+                          onPageChanged: (pageIndex) {
+                            controller.goToPage(pageIndex);
+                            controller.saveProgress();
+                          },
                           padding: widget.showControls
                               ? const EdgeInsets.fromLTRB(24, 108, 24, 188)
                               : const EdgeInsets.fromLTRB(24, 44, 24, 56),

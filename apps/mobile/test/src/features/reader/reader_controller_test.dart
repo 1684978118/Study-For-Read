@@ -73,6 +73,53 @@ void main() {
     expect(controller.canGoNext, isFalse);
   });
 
+  test('page state is bounded when page count changes', () async {
+    final controller = _controller(savedChapterIndex: 0);
+
+    await controller.load();
+    controller.setPageCount(4);
+    controller.goToPage(3);
+    controller.setPageCount(2);
+
+    expect(controller.currentPageCount, 2);
+    expect(controller.currentPageIndex, 1);
+
+    controller.goToPage(99);
+    expect(controller.currentPageIndex, 1);
+
+    controller.goToPage(-1);
+    expect(controller.currentPageIndex, 1);
+  });
+
+  test(
+    'next and previous page cross chapter boundaries at page edges',
+    () async {
+      final positionRepository = _FakeReadingPositionRepository(
+        saved: _position(chapterIndex: 0),
+      );
+      final controller = _controller(positionRepository: positionRepository);
+
+      await controller.load();
+      controller.setPageCount(3);
+      await controller.nextPage();
+      await controller.nextPage();
+
+      expect(controller.currentChapterIndex, 0);
+      expect(controller.currentPageIndex, 2);
+
+      await controller.nextPage();
+
+      expect(controller.currentChapterIndex, 1);
+      expect(controller.currentPageIndex, 0);
+
+      await controller.previousPage();
+
+      expect(controller.currentChapterIndex, 0);
+      expect(controller.currentPageIndex, 0);
+      expect(positionRepository.savedPositions.last.currentChapterIndex, 0);
+    },
+  );
+
   test(
     'goToChapter jumps to a valid chapter and saves dirty progress',
     () async {

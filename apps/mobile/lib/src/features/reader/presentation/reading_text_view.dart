@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ import '../../study/domain/reader_text_selection.dart';
 import '../../study/presentation/inline_paragraph_translation.dart';
 import '../../study/presentation/paragraph_translation_controller.dart';
 
-class ReadingTextView extends StatelessWidget {
+class ReadingTextView extends StatefulWidget {
   const ReadingTextView({
     super.key,
     required this.text,
@@ -16,6 +17,10 @@ class ReadingTextView extends StatelessWidget {
     this.lineHeight = 1.72,
     this.paragraphSpacing = 18,
     this.padding = const EdgeInsets.fromLTRB(24, 44, 24, 56),
+    this.paginated = false,
+    this.currentPageIndex = 0,
+    this.onPageChanged,
+    this.onPageCountChanged,
     this.onLookup,
     this.onBlankTap,
     this.onTranslateParagraph,
@@ -27,6 +32,10 @@ class ReadingTextView extends StatelessWidget {
   final double lineHeight;
   final double paragraphSpacing;
   final EdgeInsetsGeometry padding;
+  final bool paginated;
+  final int currentPageIndex;
+  final ValueChanged<int>? onPageChanged;
+  final ValueChanged<int>? onPageCountChanged;
   final ValueChanged<ReaderTextSelection>? onLookup;
   final VoidCallback? onBlankTap;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
@@ -34,31 +43,183 @@ class ReadingTextView extends StatelessWidget {
   translationStateFor;
 
   @override
+  State<ReadingTextView> createState() => _ReadingTextViewState();
+}
+
+class _ReadingTextViewState extends State<ReadingTextView> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.currentPageIndex);
+  }
+
+  @override
+  void didUpdateWidget(covariant ReadingTextView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _pageController.dispose();
+      _pageController = PageController(initialPage: widget.currentPageIndex);
+      return;
+    }
+    if (oldWidget.currentPageIndex != widget.currentPageIndex &&
+        _pageController.hasClients) {
+      _pageController.jumpToPage(widget.currentPageIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final paragraphs = _paragraphs();
-    return SingleChildScrollView(
-      padding: padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final paragraph in paragraphs)
-            _ParagraphView(
-              paragraph: paragraph,
-              fontSize: fontSize,
-              lineHeight: lineHeight,
-              paragraphSpacing: paragraphSpacing,
-              onLookup: onLookup,
-              onBlankTap: onBlankTap,
-              onTranslateParagraph: onTranslateParagraph,
-              translationStateFor: translationStateFor,
-            ),
-        ],
-      ),
+    if (!widget.paginated) {
+      return _buildScrollable(paragraphs);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedPadding = widget.padding.resolve(
+          Directionality.of(context),
+        );
+        final pageWidth = math.max(
+          1.0,
+          constraints.maxWidth - resolvedPadding.horizontal,
+        );
+        final pageHeight = math.max(
+          1.0,
+          constraints.maxHeight - resolvedPadding.vertical,
+        );
+        final pages = _paginate(
+          context: context,
+          paragraphs: paragraphs,
+          pageWidth: pageWidth,
+          pageHeight: pageHeight,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onPageCountChanged?.call(pages.length);
+          }
+        });
+
+        return Padding(
+          padding: widget.padding,
+          child: PageView.builder(
+            key: const Key('reader-page-view'),
+            controller: _pageController,
+            itemCount: pages.length,
+            onPageChanged: widget.onPageChanged,
+            itemBuilder: (context, index) {
+              return _buildParagraphColumn(pages[index]);
+            },
+          ),
+        );
+      },
     );
   }
 
+  Widget _buildScrollable(List<_Paragraph> paragraphs) {
+    return SingleChildScrollView(
+      padding: widget.padding,
+      child: _buildParagraphColumn(paragraphs),
+    );
+  }
+
+  Widget _buildParagraphColumn(List<_Paragraph> paragraphs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final paragraph in paragraphs)
+          _ParagraphView(
+            paragraph: paragraph,
+            fontSize: widget.fontSize,
+            lineHeight: widget.lineHeight,
+            paragraphSpacing: widget.paragraphSpacing,
+            onLookup: widget.onLookup,
+            onBlankTap: widget.onBlankTap,
+            onTranslateParagraph: widget.onTranslateParagraph,
+            translationStateFor: widget.translationStateFor,
+          ),
+      ],
+    );
+  }
+
+  List<List<_Paragraph>> _paginate({
+    required BuildContext context,
+    required List<_Paragraph> paragraphs,
+    required double pageWidth,
+    required double pageHeight,
+  }) {
+    if (paragraphs.isEmpty) {
+      return const [[]];
+    }
+
+    final textStyle = TextStyle(
+      fontSize: widget.fontSize,
+      height: widget.lineHeight,
+      letterSpacing: 0,
+    );
+    final pages = <List<_Paragraph>>[];
+    var currentPage = <_Paragraph>[];
+    var usedHeight = 0.0;
+
+    for (final paragraph in paragraphs) {
+      final paragraphHeight = paragraph.epubImageUri == null
+          ? _measureParagraphHeight(
+              context: context,
+              paragraph: paragraph,
+              style: textStyle,
+              maxWidth: pageWidth,
+            )
+          : pageHeight;
+      final blockHeight = math.min(
+        pageHeight,
+        paragraphHeight + widget.paragraphSpacing,
+      );
+      final shouldStartNewPage =
+          currentPage.isNotEmpty && usedHeight + blockHeight > pageHeight;
+      if (shouldStartNewPage) {
+        pages.add(currentPage);
+        currentPage = <_Paragraph>[];
+        usedHeight = 0;
+      }
+
+      currentPage.add(paragraph);
+      usedHeight += blockHeight;
+
+      if (paragraph.epubImageUri != null) {
+        pages.add(currentPage);
+        currentPage = <_Paragraph>[];
+        usedHeight = 0;
+      }
+    }
+
+    if (currentPage.isNotEmpty) {
+      pages.add(currentPage);
+    }
+    return pages.isEmpty ? const [[]] : pages;
+  }
+
+  double _measureParagraphHeight({
+    required BuildContext context,
+    required _Paragraph paragraph,
+    required TextStyle style,
+    required double maxWidth,
+  }) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: paragraph.displayText, style: style),
+      textDirection: Directionality.of(context),
+      maxLines: null,
+    )..layout(maxWidth: maxWidth);
+    return textPainter.height;
+  }
+
   List<_Paragraph> _paragraphs() {
-    final values = text
+    final values = widget.text
         .split(RegExp(r'\n\s*\n'))
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)

@@ -38,6 +38,42 @@ void main() {
     expect(find.textContaining('\u3000first chapter text'), findsOneWidget);
   });
 
+  testWidgets('long chapter renders as multiple reader pages', (tester) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('reader-page-view')), findsOneWidget);
+    expect(controller.currentPageCount, greaterThan(1));
+    expect(controller.currentPageIndex, 0);
+  });
+
+  testWidgets('swiping reader page view updates current page index', (
+    tester,
+  ) async {
+    final controller = _controller(
+      chapters: [
+        _chapter(index: 0, title: 'Long Chapter', content: _longChapterText()),
+      ],
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const Key('reader-page-view')),
+      const Offset(-500, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPageIndex, 1);
+  });
+
   testWidgets('tap blank reading space toggles temporary controls', (
     tester,
   ) async {
@@ -560,6 +596,13 @@ List<LocalChapter> _chapters() {
     _chapter(index: 1, title: 'Chapter 2', content: 'second chapter text'),
     _chapter(index: 2, title: 'Chapter 3', content: 'third chapter text'),
   ];
+}
+
+String _longChapterText() {
+  return List<String>.generate(
+    80,
+    (index) => '这是第 $index 段测试文字，用来验证阅读器会按照手机屏幕高度分页显示，而不是把整章作为一个长滚动页面。',
+  ).join('\n\n');
 }
 
 LocalChapter _chapter({
