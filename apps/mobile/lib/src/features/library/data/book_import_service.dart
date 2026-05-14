@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../reader/data/local_reading_position_repository.dart';
@@ -48,7 +49,7 @@ class BookImportService implements BookImporter {
     required File sourceFile,
   }) async {
     final storedFile = await _storageService.store(sourceFile);
-    final parsedBook = await _parse(sourceFile, storedFile.fileType);
+    final parsedBook = await _parse(sourceFile, storedFile);
     final now = DateTime.now().toUtc();
 
     return _database.transaction((txn) async {
@@ -129,10 +130,18 @@ class BookImportService implements BookImporter {
     });
   }
 
-  Future<ParsedBook> _parse(File sourceFile, BookFileType fileType) {
-    return switch (fileType) {
+  Future<ParsedBook> _parse(File sourceFile, StoredBookFile storedFile) {
+    return switch (storedFile.fileType) {
       BookFileType.txt => _txtParser.parseFile(sourceFile),
-      BookFileType.epub => _epubParser.parseFile(sourceFile),
+      BookFileType.epub => _epubParser.parseFile(
+        sourceFile,
+        imageOutputDirectory: Directory(
+          p.join(
+            p.dirname(storedFile.localPath),
+            '${storedFile.fingerprint}_assets',
+          ),
+        ),
+      ),
     };
   }
 

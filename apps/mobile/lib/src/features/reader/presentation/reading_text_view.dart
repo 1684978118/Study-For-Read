@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../study/domain/paragraph_selection.dart';
@@ -79,6 +81,14 @@ class _ParagraphView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUri = paragraph.epubImageUri;
+    if (imageUri != null) {
+      return _EpubImagePage(
+        paragraphIndex: paragraph.index,
+        imageUri: imageUri,
+      );
+    }
+
     final selection = ParagraphSelection(
       selectedParagraphText: paragraph.text,
       paragraphIndex: paragraph.index,
@@ -176,10 +186,7 @@ class _ParagraphView extends StatelessWidget {
     }
 
     final lastLine = lines.last;
-    final left = (lastLine.left + lastLine.width + 4).clamp(
-      0.0,
-      maxWidth - 44,
-    );
+    final left = (lastLine.left + lastLine.width + 4).clamp(0.0, maxWidth - 44);
     final top = (lastLine.baseline - lastLine.ascent - 6).clamp(
       0.0,
       double.infinity,
@@ -209,4 +216,108 @@ class _Paragraph {
 
   final int index;
   final String text;
+
+  Uri? get epubImageUri {
+    final match = RegExp(
+      r'^!\[epub-image\]\((file://[^)]+)\)$',
+    ).firstMatch(text);
+    final value = match?.group(1);
+    if (value == null) {
+      return null;
+    }
+    return Uri.tryParse(value);
+  }
+}
+
+class _EpubImagePage extends StatelessWidget {
+  const _EpubImagePage({required this.paragraphIndex, required this.imageUri});
+
+  final int paragraphIndex;
+  final Uri imageUri;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: GestureDetector(
+        key: Key('epub-image-page-$paragraphIndex'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openPreview(context),
+        child: SizedBox(
+          width: double.infinity,
+          height: 520,
+          child: Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.file(
+                File.fromUri(imageUri),
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.5),
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const SizedBox(
+                      width: double.infinity,
+                      height: 220,
+                      child: Center(child: Icon(Icons.broken_image_outlined)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPreview(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog.fullscreen(
+          key: const Key('epub-image-preview'),
+          backgroundColor: Colors.black,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    minScale: 0.8,
+                    maxScale: 4,
+                    child: Image.file(
+                      File.fromUri(imageUri),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.white70,
+                          size: 48,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    tooltip: '关闭',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

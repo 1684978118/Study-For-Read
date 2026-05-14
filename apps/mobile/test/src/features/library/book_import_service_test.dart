@@ -87,6 +87,35 @@ void main() {
   });
 
   test(
+    'importing EPUB preserves image-only spine pages as image chapters',
+    () async {
+      final file = await _writeImageOnlyEpub(tempDir, 'image-book.epub');
+
+      await service.importBook(ownerUserId: 'user-1', sourceFile: file);
+
+      final chapters = await db.query(
+        'local_chapters',
+        orderBy: 'chapter_index ASC',
+      );
+
+      expect(chapters, hasLength(2));
+      for (final chapter in chapters) {
+        final content = chapter['content'] as String;
+        expect(content, contains('![epub-image]('));
+        expect(content, contains('file://'));
+        final uri = Uri.parse(
+          content.substring(content.indexOf('(') + 1, content.lastIndexOf(')')),
+        );
+        expect(await File.fromUri(uri).exists(), isTrue);
+        expect(
+          File.fromUri(uri).path.replaceAll('\\', '/'),
+          startsWith(privateRoot.path.replaceAll('\\', '/')),
+        );
+      }
+    },
+  );
+
+  test(
     're-importing same owner and fingerprint does not duplicate book',
     () async {
       final file = await _writeText(
@@ -181,8 +210,57 @@ Future<File> _writeEpub(Directory directory, String filename) async {
   return file;
 }
 
+Future<File> _writeImageOnlyEpub(Directory directory, String filename) async {
+  final archive = Archive()
+    ..addFile(_archiveFile('META-INF/container.xml', _containerXml()))
+    ..addFile(
+      _archiveFile(
+        'OEBPS/content.opf',
+        _opf(
+          manifestItems: const [
+            '<item id="titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml" />',
+            '<item id="image-page" href="text/part0000.html" media-type="application/xhtml+xml" />',
+            '<item id="cover-image" href="images/cover.png" media-type="image/png" />',
+          ],
+          spineIds: const ['titlepage', 'image-page'],
+        ),
+      ),
+    )
+    ..addFile(
+      _archiveFile(
+        'OEBPS/titlepage.xhtml',
+        _xhtmlBodyOnly(
+          title: 'Cover',
+          body:
+              '<svg xmlns="http://www.w3.org/2000/svg" '
+              'xmlns:xlink="http://www.w3.org/1999/xlink">'
+              '<image xlink:href="images/cover.png" /></svg>',
+        ),
+      ),
+    )
+    ..addFile(
+      _archiveFile(
+        'OEBPS/text/part0000.html',
+        _xhtmlBodyOnly(
+          title: 'Image Page',
+          body: '<p><img src="../images/cover.png" alt="page image" /></p>',
+        ),
+      ),
+    )
+    ..addFile(
+      _binaryArchiveFile('OEBPS/images/cover.png', _transparentPngBytes()),
+    );
+  final file = File('${directory.path}/$filename');
+  await file.writeAsBytes(ZipEncoder().encode(archive));
+  return file;
+}
+
 ArchiveFile _archiveFile(String name, String content) {
   final bytes = utf8.encode(content);
+  return ArchiveFile(name, bytes.length, bytes);
+}
+
+ArchiveFile _binaryArchiveFile(String name, List<int> bytes) {
   return ArchiveFile(name, bytes.length, bytes);
 }
 
@@ -196,7 +274,12 @@ String _containerXml() {
 ''';
 }
 
-String _opf() {
+String _opf({
+  List<String> manifestItems = const [
+    '<item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml" />',
+  ],
+  List<String> spineIds = const ['chapter'],
+}) {
   return '''
 <package version="3.0" xmlns="http://www.idpf.org/2007/opf">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -204,10 +287,10 @@ String _opf() {
     <dc:creator>EPUB Author</dc:creator>
   </metadata>
   <manifest>
-    <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml" />
+    ${manifestItems.join('\n')}
   </manifest>
   <spine>
-    <itemref idref="chapter" />
+    ${spineIds.map((id) => '<itemref idref="$id" />').join('\n')}
   </spine>
 </package>
 ''';
@@ -222,4 +305,89 @@ String _xhtml({required String title, required String body}) {
   </body>
 </html>
 ''';
+}
+
+String _xhtmlBodyOnly({required String title, required String body}) {
+  return '''
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>$title</title>
+  </head>
+  <body>
+    $body
+  </body>
+</html>
+''';
+}
+
+List<int> _transparentPngBytes() {
+  return const [
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+    0x00,
+    0x00,
+    0x00,
+    0x0D,
+    0x49,
+    0x48,
+    0x44,
+    0x52,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x08,
+    0x06,
+    0x00,
+    0x00,
+    0x00,
+    0x1F,
+    0x15,
+    0xC4,
+    0x89,
+    0x00,
+    0x00,
+    0x00,
+    0x0A,
+    0x49,
+    0x44,
+    0x41,
+    0x54,
+    0x78,
+    0x9C,
+    0x63,
+    0x60,
+    0x00,
+    0x00,
+    0x00,
+    0x02,
+    0x00,
+    0x01,
+    0xE5,
+    0x27,
+    0xD4,
+    0xA2,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x49,
+    0x45,
+    0x4E,
+    0x44,
+    0xAE,
+    0x42,
+    0x60,
+    0x82,
+  ];
 }

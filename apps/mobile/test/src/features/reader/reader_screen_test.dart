@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:study_for_read_mobile/src/features/library/data/local_book_repository.dart';
@@ -45,6 +47,48 @@ void main() {
 
     expect(find.text('上一章'), findsNothing);
     expect(find.text('下一章'), findsNothing);
+  });
+
+  testWidgets('reader-renders-epub-image-page-chapters-as-images', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReadingTextView(
+            text:
+                '![epub-image](${Uri.file('${Directory.systemTemp.path}/epub-page.png')})',
+            fontSize: ReaderController.defaultFontSize,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('epub-image-page-0')), findsOneWidget);
+    expect(find.textContaining('![epub-image]'), findsNothing);
+  });
+
+  testWidgets('tapping an EPUB image page opens a larger preview', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReadingTextView(
+            text:
+                '![epub-image](${Uri.file('${Directory.systemTemp.path}/epub-page.png')})',
+            fontSize: ReaderController.defaultFontSize,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('epub-image-page-0')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('epub-image-preview')), findsOneWidget);
   });
 
   testWidgets('reader controls expose a close action', (tester) async {
@@ -177,12 +221,15 @@ Widget _app(ReaderController controller, {VoidCallback? onClose}) {
 
 ReaderController _controller({
   bool missingBook = false,
+  List<LocalChapter>? chapters,
   _FakeReadingPositionRepository? positionRepository,
 }) {
   return ReaderController(
     bookId: 'book-1',
     bookRepository: _FakeBookRepository(book: missingBook ? null : _book()),
-    chapterRepository: _FakeChapterRepository(chapters: _chapters()),
+    chapterRepository: _FakeChapterRepository(
+      chapters: chapters ?? _chapters(),
+    ),
     positionRepository:
         positionRepository ??
         _FakeReadingPositionRepository(saved: _position(chapterIndex: 0)),
