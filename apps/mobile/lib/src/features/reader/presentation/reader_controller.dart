@@ -47,6 +47,8 @@ class ReaderController extends ChangeNotifier {
   static const double maxLineHeight = 2.4;
   static const double minParagraphSpacing = 0;
   static const double maxParagraphSpacing = 36;
+  static const double minBrightness = 0.3;
+  static const double maxBrightness = 1.0;
 
   final String _bookId;
   final LocalBookRepository _bookRepository;
@@ -235,6 +237,14 @@ class ReaderController extends ChangeNotifier {
   Future<void> setParagraphSpacing(double value) {
     _readerPreferences = _readerPreferences.copyWith(
       paragraphSpacing: value.clamp(minParagraphSpacing, maxParagraphSpacing),
+    );
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
+  Future<void> setBrightness(double value) {
+    _readerPreferences = _readerPreferences.copyWith(
+      brightness: value.clamp(minBrightness, maxBrightness),
     );
     notifyListeners();
     return _preferencesRepository?.save(_readerPreferences) ?? Future.value();

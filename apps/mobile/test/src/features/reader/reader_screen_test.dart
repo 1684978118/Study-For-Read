@@ -152,6 +152,50 @@ void main() {
     expect(find.text('其他'), findsOneWidget);
   });
 
+  testWidgets(
+    'settings brightness slider is enabled for app-local brightness',
+    (tester) async {
+      await tester.pumpWidget(_app(_controller()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reader-tap-area')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('设置'));
+      await tester.pumpAndSettle();
+
+      final slider = tester.widget<Slider>(
+        find.byKey(const Key('reader-brightness-slider')),
+      );
+      expect(slider.onChanged, isNotNull);
+    },
+  );
+
+  testWidgets('brightness slider persists value and dims reader only', (
+    tester,
+  ) async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    await tester.pumpWidget(
+      _app(_controller(preferencesRepository: preferencesRepository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    tester
+        .widget<Slider>(find.byKey(const Key('reader-brightness-slider')))
+        .onChanged!
+        .call(0.5);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('reader-brightness-dim-overlay')),
+      findsOneWidget,
+    );
+    expect(preferencesRepository.saved.single.brightness, 0.5);
+  });
+
   testWidgets('settings font controls update reading text size', (
     tester,
   ) async {

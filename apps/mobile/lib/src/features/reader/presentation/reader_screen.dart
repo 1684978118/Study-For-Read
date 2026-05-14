@@ -188,6 +188,22 @@ class _ReaderContentState extends State<_ReaderContent> {
                     ),
                   ),
                 ),
+              if (controller.readerPreferences.brightness <
+                  ReaderController.maxBrightness)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      key: const Key('reader-brightness-dim-overlay'),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(
+                          alpha:
+                              ReaderController.maxBrightness -
+                              controller.readerPreferences.brightness,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               if (widget.showControls)
                 _ReaderControls(
                   controller: controller,
@@ -448,8 +464,11 @@ class _ReaderSettingsSheet extends StatelessWidget {
                   title: '亮度',
                   child: Slider(
                     key: const Key('reader-brightness-slider'),
+                    min: ReaderController.minBrightness,
+                    max: ReaderController.maxBrightness,
+                    divisions: 7,
                     value: preferences.brightness,
-                    onChanged: null,
+                    onChanged: controller.setBrightness,
                   ),
                 ),
                 SwitchListTile(

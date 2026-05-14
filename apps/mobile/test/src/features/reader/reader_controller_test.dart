@@ -237,6 +237,22 @@ void main() {
     },
   );
 
+  test('setBrightness persists clamped app-local brightness', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+    await controller.setBrightness(0.5);
+    await controller.setBrightness(2.0);
+    await controller.setBrightness(0.1);
+
+    expect(preferencesRepository.saved.first.brightness, 0.5);
+    expect(preferencesRepository.saved[1].brightness, 1.0);
+    expect(preferencesRepository.saved.last.brightness, 0.3);
+  });
+
   test('eye protection and page turn mode preferences persist', () async {
     final preferencesRepository = _FakeReaderPreferencesRepository();
     final controller = _controller(
