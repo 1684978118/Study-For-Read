@@ -29,7 +29,9 @@ void main() {
     expect(hotspotLeft, greaterThan(paragraphLeft + 120));
   });
 
-  testWidgets('reader shows subtle plus after each paragraph', (tester) async {
+  testWidgets('reader shows subtle paragraph action icons without plus text', (
+    tester,
+  ) async {
     await tester.pumpWidget(_app(_controller()));
     await tester.pumpAndSettle();
 
@@ -41,7 +43,8 @@ void main() {
       find.byKey(const Key('paragraph-translate-hotspot-1')),
       findsOneWidget,
     );
-    expect(find.text('+'), findsNWidgets(2));
+    expect(find.byIcon(Icons.add_circle_outline), findsNWidgets(2));
+    expect(find.text('+'), findsNothing);
   });
 
   testWidgets(
@@ -70,7 +73,8 @@ void main() {
       expect(find.text('Copy'), findsNothing);
       expect(find.text('保存'), findsNothing);
       expect(find.text('Collapse'), findsNothing);
-      expect(find.text('+'), findsNWidgets(2));
+      expect(find.byIcon(Icons.add_circle_outline), findsNWidgets(2));
+      expect(find.text('+'), findsNothing);
     },
   );
 
@@ -89,7 +93,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('离线'), findsOneWidget);
-      expect(find.text('+'), findsNWidgets(2));
+      expect(find.byIcon(Icons.add_circle_outline), findsNWidgets(2));
+      expect(find.text('+'), findsNothing);
     },
   );
 }

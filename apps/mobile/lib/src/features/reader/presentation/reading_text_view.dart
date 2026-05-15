@@ -370,14 +370,13 @@ class _ParagraphView extends StatelessWidget {
                             ? null
                             : () => onTranslateParagraph!(selection),
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(6, 0, 18, 4),
-                          child: Text(
-                            '+',
-                            style: textStyle.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.22),
-                            ),
+                          padding: const EdgeInsets.fromLTRB(8, 2, 18, 8),
+                          child: Icon(
+                            Icons.add_circle_outline,
+                            size: (fontSize * 0.78).clamp(14.0, 20.0),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.18),
                           ),
                         ),
                       ),

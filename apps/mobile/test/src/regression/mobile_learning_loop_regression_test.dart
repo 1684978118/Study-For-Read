@@ -147,7 +147,8 @@ void main() {
       expect(find.text('Copy'), findsNothing);
       expect(find.text('保存'), findsNothing);
       expect(find.text('Collapse'), findsNothing);
-      expect(find.text('+'), findsNWidgets(2));
+      expect(find.byIcon(Icons.add_circle_outline), findsNWidgets(2));
+      expect(find.text('+'), findsNothing);
       expect(translationCacheRepository.entries, hasLength(1));
       expect(
         translationCacheRepository.entries.single.translatedText,

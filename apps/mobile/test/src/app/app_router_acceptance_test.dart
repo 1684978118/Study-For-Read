@@ -25,12 +25,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('reader-page-view')), findsOneWidget);
-    expect(find.textContaining('Acceptance Reader Seed'), findsOneWidget);
+    expect(find.textContaining('第一章的阅读验收文本'), findsOneWidget);
+    expect(find.textContaining('Acceptance Reader Seed chapter one'), findsNothing);
     expect(find.byType(BottomNavigationBar), findsNothing);
 
     await tester.tap(find.byKey(const Key('reader-tap-area')));
     await tester.pumpAndSettle();
 
+    expect(find.textContaining('验收阅读样书'), findsOneWidget);
     expect(find.byKey(const Key('reader-directory-button')), findsOneWidget);
     expect(find.byKey(const Key('reader-night-toggle-button')), findsOneWidget);
     expect(find.byKey(const Key('reader-settings-button')), findsOneWidget);
