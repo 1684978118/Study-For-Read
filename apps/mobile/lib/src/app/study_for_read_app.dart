@@ -7,11 +7,20 @@ class StudyForReadApp extends StatelessWidget {
   const StudyForReadApp({
     super.key,
     this.isSignedIn = false,
-    this.initialLocation = '/',
+    this.initialLocation = _defaultInitialLocation,
+    this.enableAcceptanceReader = _acceptanceReaderEnabled,
   });
+
+  static const bool _acceptanceReaderEnabled = bool.fromEnvironment(
+    'ENABLE_ACCEPTANCE_READER',
+  );
+  static const String _defaultInitialLocation = _acceptanceReaderEnabled
+      ? '/acceptance/reader'
+      : '/';
 
   final bool isSignedIn;
   final String initialLocation;
+  final bool enableAcceptanceReader;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +31,7 @@ class StudyForReadApp extends StatelessWidget {
       routerConfig: createAppRouter(
         isSignedIn: isSignedIn,
         initialLocation: initialLocation,
+        enableAcceptanceReader: enableAcceptanceReader,
       ),
     );
   }

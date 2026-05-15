@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/library/presentation/library_screen.dart';
+import '../features/reader/presentation/acceptance_reader_screen.dart';
 import '../features/reader/presentation/reader_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/stats/presentation/stats_screen.dart';
@@ -12,6 +13,7 @@ import '../features/vocabulary/presentation/vocabulary_screen.dart';
 GoRouter createAppRouter({
   required bool isSignedIn,
   String initialLocation = '/',
+  bool enableAcceptanceReader = false,
 }) {
   final authState = ValueNotifier<bool>(isSignedIn);
 
@@ -21,6 +23,11 @@ GoRouter createAppRouter({
     redirect: (context, state) {
       final path = state.uri.path;
       final isAuthRoute = path == '/sign-in' || path == '/register';
+      final isAcceptanceRoute = path == '/acceptance/reader';
+
+      if (enableAcceptanceReader && isAcceptanceRoute) {
+        return null;
+      }
 
       if (!authState.value && !isAuthRoute) {
         return '/sign-in';
@@ -80,8 +87,17 @@ GoRouter createAppRouter({
           onClose: () => context.go('/library'),
         ),
       ),
+      if (enableAcceptanceReader)
+        GoRoute(
+          path: '/acceptance/reader',
+          builder: _buildAcceptanceReader,
+        ),
     ],
   );
+}
+
+Widget _buildAcceptanceReader(BuildContext context, GoRouterState state) {
+  return const AcceptanceReaderScreen();
 }
 
 class _HomeShell extends StatelessWidget {
