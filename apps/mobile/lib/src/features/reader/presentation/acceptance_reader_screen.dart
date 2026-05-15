@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../library/data/local_book_repository.dart';
 import '../../library/data/local_chapter_repository.dart';
@@ -35,7 +36,10 @@ class _AcceptanceReaderScreenState extends State<AcceptanceReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ReaderScreen(controller: _controller);
+    return ReaderScreen(
+      controller: _controller,
+      onClose: () => context.go('/sign-in'),
+    );
   }
 }
 

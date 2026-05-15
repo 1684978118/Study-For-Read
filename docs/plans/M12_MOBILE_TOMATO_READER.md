@@ -78,6 +78,7 @@ Build a phone-first Reader with real pagination, persistent reading preferences,
 9. `M12-F09-T01-mobile-reader-emulator-acceptance.md`
 10. `M12-F10-T01-mobile-reader-seeded-emulator-acceptance.md`
 11. `M12-F11-T01-mobile-reader-visual-polish-from-emulator.md`
+12. `M12-F12-T01-mobile-acceptance-reader-exit.md`
 
 Add or split task cards if an implementation step becomes too large for one safe TDD cycle.
 

@@ -37,4 +37,24 @@ void main() {
     expect(find.byKey(const Key('reader-night-toggle-button')), findsOneWidget);
     expect(find.byKey(const Key('reader-settings-button')), findsOneWidget);
   });
+
+  testWidgets('enabled acceptance reader can close back to Sign In', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const StudyForReadApp(
+        initialLocation: '/acceptance/reader',
+        enableAcceptanceReader: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-close-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('sign-in-email-field')), findsOneWidget);
+    expect(find.byKey(const Key('reader-page-view')), findsNothing);
+  });
 }
