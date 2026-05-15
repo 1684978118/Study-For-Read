@@ -50,6 +50,8 @@ class ReadingTextView extends StatefulWidget {
 }
 
 class _ReadingTextViewState extends State<ReadingTextView> {
+  static const double _paginationSafetyInset = 12;
+
   late PageController _pageController;
 
   @override
@@ -221,6 +223,10 @@ class _ReadingTextViewState extends State<ReadingTextView> {
     final pages = <List<_Paragraph>>[];
     var currentPage = <_Paragraph>[];
     var usedHeight = 0.0;
+    final effectivePageHeight = math.max(
+      1.0,
+      pageHeight - _paginationSafetyInset,
+    );
 
     for (final paragraph in paragraphs) {
       final paragraphHeight = paragraph.epubImageUri == null
@@ -231,12 +237,37 @@ class _ReadingTextViewState extends State<ReadingTextView> {
               maxWidth: pageWidth,
             )
           : pageHeight;
+      if (paragraph.epubImageUri == null &&
+          paragraphHeight + widget.paragraphSpacing > effectivePageHeight) {
+        if (currentPage.isNotEmpty) {
+          pages.add(currentPage);
+          currentPage = <_Paragraph>[];
+          usedHeight = 0;
+        }
+
+        final splitParagraphs = _splitParagraphForPages(
+          context: context,
+          paragraph: paragraph,
+          style: textStyle,
+          maxWidth: pageWidth,
+          maxHeight: math.max(
+            1.0,
+            effectivePageHeight - widget.paragraphSpacing,
+          ),
+        );
+        for (final splitParagraph in splitParagraphs) {
+          pages.add([splitParagraph]);
+        }
+        continue;
+      }
+
       final blockHeight = math.min(
-        pageHeight,
+        effectivePageHeight,
         paragraphHeight + widget.paragraphSpacing,
       );
       final shouldStartNewPage =
-          currentPage.isNotEmpty && usedHeight + blockHeight > pageHeight;
+          currentPage.isNotEmpty &&
+          usedHeight + blockHeight > effectivePageHeight;
       if (shouldStartNewPage) {
         pages.add(currentPage);
         currentPage = <_Paragraph>[];
@@ -259,14 +290,106 @@ class _ReadingTextViewState extends State<ReadingTextView> {
     return pages.isEmpty ? const [[]] : pages;
   }
 
+  List<_Paragraph> _splitParagraphForPages({
+    required BuildContext context,
+    required _Paragraph paragraph,
+    required TextStyle style,
+    required double maxWidth,
+    required double maxHeight,
+  }) {
+    final chunks = <_Paragraph>[];
+    var remaining = paragraph.text.trim();
+    var chunkIndex = 0;
+
+    while (remaining.isNotEmpty) {
+      final splitEnd = _largestFittingTextEnd(
+        context: context,
+        text: remaining,
+        style: style,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+      );
+      final chunkText = remaining.substring(0, splitEnd).trim();
+      if (chunkText.isNotEmpty) {
+        chunks.add(
+          _Paragraph(
+            index: -((paragraph.index + 1) * 1000 + chunkIndex),
+            sourceIndex: paragraph.sourceIndex,
+            text: chunkText,
+          ),
+        );
+        chunkIndex += 1;
+      }
+      remaining = remaining.substring(splitEnd).trimLeft();
+    }
+
+    return chunks.isEmpty ? [paragraph] : chunks;
+  }
+
+  int _largestFittingTextEnd({
+    required BuildContext context,
+    required String text,
+    required TextStyle style,
+    required double maxWidth,
+    required double maxHeight,
+  }) {
+    var low = 1;
+    var high = text.length;
+    var best = 1;
+
+    while (low <= high) {
+      final mid = (low + high) ~/ 2;
+      final candidate = text.substring(0, mid).trimRight();
+      final height = _measureTextHeight(
+        context: context,
+        text: '\u3000$candidate',
+        style: style,
+        maxWidth: maxWidth,
+      );
+      if (height <= maxHeight) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    return _preferredSplitEnd(text, best);
+  }
+
+  int _preferredSplitEnd(String text, int fallbackEnd) {
+    final boundedEnd = fallbackEnd.clamp(1, text.length);
+    const breakChars = '。！？!?、，,. ';
+    for (var index = boundedEnd - 1; index > 0; index--) {
+      if (breakChars.contains(text[index])) {
+        return index + 1;
+      }
+    }
+    return boundedEnd;
+  }
+
   double _measureParagraphHeight({
     required BuildContext context,
     required _Paragraph paragraph,
     required TextStyle style,
     required double maxWidth,
   }) {
+    return _measureTextHeight(
+      context: context,
+      text: paragraph.displayText,
+      style: style,
+      maxWidth: maxWidth,
+    );
+  }
+
+  double _measureTextHeight({
+    required BuildContext context,
+    required String text,
+    required TextStyle style,
+    required double maxWidth,
+  }) {
     final textPainter = TextPainter(
-      text: TextSpan(text: paragraph.displayText, style: style),
+      text: TextSpan(text: text, style: style),
       textDirection: Directionality.of(context),
       maxLines: null,
     )..layout(maxWidth: maxWidth);
@@ -323,7 +446,7 @@ class _ParagraphView extends StatelessWidget {
 
     final selection = ParagraphSelection(
       selectedParagraphText: paragraph.text,
-      paragraphIndex: paragraph.index,
+      paragraphIndex: paragraph.sourceIndex,
     );
     final translationState = translationStateFor?.call(selection);
     final textStyle = TextStyle(
@@ -447,9 +570,14 @@ class _ParagraphView extends StatelessWidget {
 }
 
 class _Paragraph {
-  const _Paragraph({required this.index, required this.text});
+  const _Paragraph({
+    required this.index,
+    required this.text,
+    int? sourceIndex,
+  }) : sourceIndex = sourceIndex ?? index;
 
   final int index;
+  final int sourceIndex;
   final String text;
 
   String get displayText => '\u3000$text';

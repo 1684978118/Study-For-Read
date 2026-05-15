@@ -54,6 +54,45 @@ void main() {
     expect(controller.currentPageIndex, 0);
   });
 
+  testWidgets('paginated Japanese reader pages do not overflow at bottom', (
+    tester,
+  ) async {
+    final previousErrorHandler = FlutterError.onError;
+    final overflowErrors = <FlutterErrorDetails>[];
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('A RenderFlex overflowed')) {
+        overflowErrors.add(details);
+        return;
+      }
+      previousErrorHandler?.call(details);
+    };
+    addTearDown(() {
+      FlutterError.onError = previousErrorHandler;
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    tester.view.physicalSize = const Size(393, 873);
+    tester.view.devicePixelRatio = 1;
+
+    final controller = _controller(
+      chapters: [
+        _chapter(
+          index: 0,
+          title: 'Acceptance Sample',
+          content: _overflowProneJapaneseText(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    FlutterError.onError = previousErrorHandler;
+    expect(overflowErrors, isEmpty);
+  });
+
   testWidgets('swiping reader page view updates current page index', (
     tester,
   ) async {
@@ -791,6 +830,13 @@ String _longChapterText() {
     80,
     (index) => '这是第 $index 段测试文字，用来验证阅读器会按照手机屏幕高度分页显示，而不是把整章作为一个长滚动页面。',
   ).join('\n\n');
+}
+
+String _overflowProneJapaneseText() {
+  return List<String>.filled(
+    18,
+    'そうそう。困っちゃうわよねー。就職決まったから、調子に乗って一人暮らし始めたんだけど……生まれてからずっと実家暮らしだったから、一人で生活するのが、寂しくて寂しくて。',
+  ).join('');
 }
 
 LocalChapter _chapter({
