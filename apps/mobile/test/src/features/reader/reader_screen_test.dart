@@ -69,6 +69,70 @@ void main() {
     expect(controller.currentPageIndex, 0);
   });
 
+  testWidgets(
+    'long single furigana paragraph fills the page with visible lines',
+    (tester) async {
+      tester.view.physicalSize = const Size(393, 873);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = _controller(
+        chapters: [
+          _chapter(
+            index: 0,
+            title: 'Single Paragraph',
+            content: _longSingleJapaneseParagraphForPagination(),
+          ),
+        ],
+        preferencesRepository: _FakeReaderPreferencesRepository(
+          saved: ReaderPreferences.defaults.copyWith(furiganaEnabled: true),
+        ),
+      );
+
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
+
+      final textView = tester.widget<ReadingTextView>(
+        find.byType(ReadingTextView),
+      );
+      expect(textView.text.length, greaterThan(360));
+      expect(controller.currentPageCount, greaterThan(1));
+      expect(find.byType(SingleChildScrollView), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('short single paragraph stays top aligned with natural blank', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(393, 873);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = _controller(
+      chapters: [
+        _chapter(
+          index: 0,
+          title: 'Short Single Paragraph',
+          content: '単なる気遣いだとしても、あるいは子供特有の無責任な発言だとしても、十分すぎるぐらいに嬉しかった。',
+        ),
+      ],
+      preferencesRepository: _FakeReaderPreferencesRepository(
+        saved: ReaderPreferences.defaults.copyWith(furiganaEnabled: true),
+      ),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+
+    final paragraphTop = tester
+        .getTopLeft(find.byKey(const Key('reader-paragraph-0')))
+        .dy;
+    expect(paragraphTop, lessThan(220));
+    expect(controller.currentPageCount, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('paginated Japanese reader pages do not overflow at bottom', (
     tester,
   ) async {
@@ -939,6 +1003,14 @@ String _overflowProneJapaneseText() {
     18,
     'そうそう。困っちゃうわよねー。就職決まったから、調子に乗って一人暮らし始めたんだけど……生まれてからずっと実家暮らしだったから、一人で生活するのが、寂しくて寂しくて。',
   ).join('');
+}
+
+String _longSingleJapaneseParagraphForPagination() {
+  final body = List<String>.filled(
+    16,
+    'それでも夕方になると、台所から聞こえる包丁の音や、廊下に落ちる光の色だけは不思議なくらい鮮やかに思い出せた。',
+  ).join();
+  return '十歳になったころには、私はもう母の顔をよく覚えていなかった。$body';
 }
 
 LocalChapter _chapter({

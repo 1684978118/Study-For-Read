@@ -227,7 +227,10 @@ class _ReadingTextViewState extends State<ReadingTextView> {
       maxWidth: pageWidth,
       pageHeight: pageHeight,
     );
-    if (!widget.furiganaEnabled && contentHeight <= pageHeight) {
+    final needsOverflowFallback =
+        contentHeight > pageHeight ||
+        (widget.furiganaEnabled && widget.fontSize >= 30);
+    if (!needsOverflowFallback) {
       return child;
     }
 
@@ -420,8 +423,15 @@ class _ReadingTextViewState extends State<ReadingTextView> {
 
   int _preferredSplitEnd(String text, int fallbackEnd) {
     final boundedEnd = fallbackEnd.clamp(1, text.length);
+    const preferredBreakChars = '。！？、，,. ';
+    final searchStart = math.max(1, boundedEnd - 48);
+    for (var index = boundedEnd - 1; index >= searchStart; index--) {
+      if (preferredBreakChars.contains(text[index])) {
+        return index + 1;
+      }
+    }
     const breakChars = '。！？!?、，,. ';
-    for (var index = boundedEnd - 1; index > 0; index--) {
+    for (var index = boundedEnd - 1; index >= searchStart; index--) {
       if (breakChars.contains(text[index])) {
         return index + 1;
       }
@@ -769,6 +779,7 @@ _ParagraphTextMetrics _measureParagraphTextMetrics({
   final lastLine = lines.last;
   final visualHeight = _estimateFuriganaVisualHeight(
     text: text,
+    lineCount: lines.length,
     maxWidth: maxWidth,
     fontSize: fontSize,
     rubyFontSize: rubyFontSize,
@@ -784,6 +795,7 @@ _ParagraphTextMetrics _measureParagraphTextMetrics({
 
 double _estimateFuriganaVisualHeight({
   required String text,
+  required int lineCount,
   required double maxWidth,
   required double fontSize,
   required double rubyFontSize,
@@ -792,17 +804,17 @@ double _estimateFuriganaVisualHeight({
   final visibleRuneCount = text.runes
       .where((rune) => String.fromCharCode(rune).trim().isNotEmpty)
       .length;
-  final estimatedUnitWidth = fontSize * 1.55 + 4;
   final estimatedCharsPerLine = math.max(
     1,
-    (maxWidth / estimatedUnitWidth).floor(),
+    (maxWidth / math.max(1.0, fontSize * 0.95)).floor(),
   );
-  final estimatedLineCount = math.max(
-    1,
+  final visibleLineCount = math.max(
+    lineCount,
     (visibleRuneCount / estimatedCharsPerLine).ceil(),
   );
-  final hitSize = math.max(24.0, (fontSize * 0.78).clamp(14.0, 20.0) + 4);
-  return estimatedLineCount * (rubyFontSize + textLineHeight + 16) + hitSize;
+  final rubyGap = math.max(4.0, fontSize * 0.75);
+  final visualLineHeight = textLineHeight + rubyFontSize + rubyGap;
+  return math.max(1, visibleLineCount) * visualLineHeight + 4;
 }
 
 class _ParagraphTextMetrics {
