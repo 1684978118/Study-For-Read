@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 class MobileDatabaseMigrations {
-  static const int version = 3;
+  static const int version = 6;
 
   static Future<void> create(Database db, int version) async {
     if (version >= 1) {
@@ -12,6 +12,15 @@ class MobileDatabaseMigrations {
     }
     if (version >= 3) {
       await _createV3(db);
+    }
+    if (version >= 4) {
+      await _createV4(db);
+    }
+    if (version >= 5) {
+      await _createV5(db);
+    }
+    if (version >= 6) {
+      await _createV6(db);
     }
   }
 
@@ -25,6 +34,15 @@ class MobileDatabaseMigrations {
     }
     if (oldVersion < 3 && newVersion >= 3) {
       await _createV3(db);
+    }
+    if (oldVersion < 4 && newVersion >= 4) {
+      await _createV4(db);
+    }
+    if (oldVersion < 5 && newVersion >= 5) {
+      await _createV5(db);
+    }
+    if (oldVersion < 6 && newVersion >= 6) {
+      await _createV6(db);
     }
   }
 
@@ -269,6 +287,44 @@ class MobileDatabaseMigrations {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
+    ''');
+  }
+
+  static Future<void> _createV4(Database db) async {
+    await db.execute('''
+      ALTER TABLE local_reader_preferences
+      ADD COLUMN lookup_translation_engine TEXT NOT NULL DEFAULT 'local_machine'
+    ''');
+    await db.execute('''
+      ALTER TABLE local_reader_preferences
+      ADD COLUMN paragraph_translation_engine TEXT NOT NULL DEFAULT 'ai'
+    ''');
+    await db.execute('''
+      ALTER TABLE local_reader_preferences
+      ADD COLUMN local_translation_models_ready INTEGER NOT NULL DEFAULT 0
+    ''');
+    await db.execute('''
+      ALTER TABLE local_reader_preferences
+      ADD COLUMN ai_prefetch_page_count INTEGER NOT NULL DEFAULT 3
+    ''');
+  }
+
+  static Future<void> _createV5(Database db) async {
+    await db.execute('''
+      ALTER TABLE local_reader_preferences
+      ADD COLUMN furigana_enabled INTEGER NOT NULL DEFAULT 0
+    ''');
+  }
+
+  static Future<void> _createV6(Database db) async {
+    await db.execute('''
+      UPDATE local_reader_preferences
+      SET
+        font_size = 18,
+        line_height = 1.55,
+        paragraph_spacing = 10,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      WHERE id = 'global'
     ''');
   }
 }

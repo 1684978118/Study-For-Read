@@ -614,65 +614,61 @@ class _ParagraphView extends StatelessWidget {
               iconSize: iconSize,
               maxWidth: constraints.maxWidth,
             );
-            return GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: onBlankTap,
-              child: furiganaEnabled
-                  ? SizedBox(
-                      width: constraints.maxWidth,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          _LookupParagraphText(
-                            key: Key('reader-paragraph-${paragraph.index}'),
-                            text: paragraph.displayText,
-                            style: textStyle,
-                            furiganaEnabled: furiganaEnabled,
-                            furiganaGenerator: furiganaGenerator,
-                            onBlankTap: onBlankTap,
-                            onLookupText: onLookup == null
-                                ? null
-                                : (selectedText) =>
-                                      onLookup!(_lookupSelection(selectedText)),
+            return furiganaEnabled
+                ? SizedBox(
+                    width: constraints.maxWidth,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _LookupParagraphText(
+                          key: Key('reader-paragraph-${paragraph.index}'),
+                          text: paragraph.displayText,
+                          style: textStyle,
+                          furiganaEnabled: furiganaEnabled,
+                          furiganaGenerator: furiganaGenerator,
+                          onBlankTap: onBlankTap,
+                          onLookupText: onLookup == null
+                              ? null
+                              : (selectedText) =>
+                                    onLookup!(_lookupSelection(selectedText)),
+                        ),
+                        Positioned(
+                          left: metrics.hotspotLeft(
+                            iconSize: iconSize,
+                            maxWidth: constraints.maxWidth,
                           ),
-                          Positioned(
-                            left: metrics.hotspotLeft(
-                              iconSize: iconSize,
-                              maxWidth: constraints.maxWidth,
-                            ),
-                            bottom: 0,
-                            child: _translateHotspot(context, selection),
-                          ),
-                        ],
-                      ),
-                    )
-                  : SizedBox(
-                      width: constraints.maxWidth,
-                      height: metrics.visualHeight,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          _LookupParagraphText(
-                            key: Key('reader-paragraph-${paragraph.index}'),
-                            text: paragraph.displayText,
-                            style: textStyle,
-                            furiganaEnabled: furiganaEnabled,
-                            furiganaGenerator: furiganaGenerator,
-                            onBlankTap: onBlankTap,
-                            onLookupText: onLookup == null
-                                ? null
-                                : (selectedText) =>
-                                      onLookup!(_lookupSelection(selectedText)),
-                          ),
-                          Positioned(
-                            left: hotspotOffset.dx,
-                            top: hotspotOffset.dy,
-                            child: _translateHotspot(context, selection),
-                          ),
-                        ],
-                      ),
+                          bottom: 0,
+                          child: _translateHotspot(context, selection),
+                        ),
+                      ],
                     ),
-            );
+                  )
+                : SizedBox(
+                    width: constraints.maxWidth,
+                    height: metrics.visualHeight,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _LookupParagraphText(
+                          key: Key('reader-paragraph-${paragraph.index}'),
+                          text: paragraph.displayText,
+                          style: textStyle,
+                          furiganaEnabled: furiganaEnabled,
+                          furiganaGenerator: furiganaGenerator,
+                          onBlankTap: onBlankTap,
+                          onLookupText: onLookup == null
+                              ? null
+                              : (selectedText) =>
+                                    onLookup!(_lookupSelection(selectedText)),
+                        ),
+                        Positioned(
+                          left: hotspotOffset.dx,
+                          top: hotspotOffset.dy,
+                          child: _translateHotspot(context, selection),
+                        ),
+                      ],
+                    ),
+                  );
           },
         ),
         if (translationState != null)
@@ -1041,7 +1037,13 @@ class _LookupParagraphTextState extends State<_LookupParagraphText> {
     final painter = _textPainter(context: context, maxWidth: maxWidth);
     final offset = painter.getPositionForOffset(localPosition).offset;
     final range = _tokenRangeAt(offset);
-    if (range == null || !_isInsideTokenBounds(painter, range, localPosition)) {
+    if (range == null ||
+        !_isInsideTokenBounds(
+          painter,
+          range,
+          localPosition,
+          horizontalOnly: widget.furiganaEnabled,
+        )) {
       widget.onBlankTap?.call();
       return;
     }
@@ -1117,11 +1119,18 @@ class _LookupParagraphTextState extends State<_LookupParagraphText> {
   bool _isInsideTokenBounds(
     TextPainter painter,
     (int, int) range,
-    Offset position,
-  ) {
+    Offset position, {
+    bool horizontalOnly = false,
+  }) {
     final boxes = painter.getBoxesForSelection(
       TextSelection(baseOffset: range.$1, extentOffset: range.$2),
     );
+    if (horizontalOnly) {
+      return boxes.any((box) {
+        final rect = box.toRect().inflate(10);
+        return position.dx >= rect.left && position.dx <= rect.right;
+      });
+    }
     return boxes.any((box) => box.toRect().inflate(8).contains(position));
   }
 

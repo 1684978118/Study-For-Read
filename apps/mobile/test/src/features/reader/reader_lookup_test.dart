@@ -7,8 +7,10 @@ import 'package:study_for_read_mobile/src/features/library/domain/local_book.dar
 import 'package:study_for_read_mobile/src/features/library/domain/local_chapter.dart';
 import 'package:study_for_read_mobile/src/features/library/domain/local_reading_position.dart';
 import 'package:study_for_read_mobile/src/features/reader/data/local_reading_position_repository.dart';
+import 'package:study_for_read_mobile/src/features/reader/domain/furigana_generator.dart';
 import 'package:study_for_read_mobile/src/features/reader/presentation/reader_controller.dart';
 import 'package:study_for_read_mobile/src/features/reader/presentation/reader_screen.dart';
+import 'package:study_for_read_mobile/src/features/reader/presentation/reading_text_view.dart';
 import 'package:study_for_read_mobile/src/features/study/domain/lookup_result.dart';
 import 'package:study_for_read_mobile/src/features/study/presentation/lookup_bottom_sheet.dart';
 import 'package:study_for_read_mobile/src/features/study/presentation/lookup_controller.dart';
@@ -20,7 +22,7 @@ void main() {
     await tester.pumpWidget(_app(_controller()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('心'));
+    await _tapFirstToken(tester);
     await tester.pumpAndSettle();
 
     expect(find.byType(LookupBottomSheet), findsOneWidget);
@@ -37,19 +39,70 @@ void main() {
     tester,
   ) async {
     final lookupController = _FakeLookupController();
-    await tester.pumpWidget(_app(_controller(lookupController: lookupController)));
+    await tester.pumpWidget(
+      _app(_controller(lookupController: lookupController)),
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('心'));
+    await _tapFirstToken(tester);
     await tester.pumpAndSettle();
 
     expect(lookupController.selections, hasLength(1));
-    expect(lookupController.selections.single.selectedText, '心');
     expect(lookupController.selections.single.paragraphContext, '先生の心。');
     expect(
       lookupController.selections.single.paragraphContext,
       isNot(contains('第二段落')),
     );
+  });
+
+  testWidgets('single tap looks up the token at the tapped position', (
+    tester,
+  ) async {
+    final lookupController = _FakeLookupController();
+    await tester.pumpWidget(
+      _app(
+        _controller(lookupController: lookupController, content: 'それから私の方を向く。'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final paragraphRect = tester.getRect(
+      find.byKey(const Key('reader-paragraph-0')),
+    );
+    await tester.tapAt(paragraphRect.centerLeft + const Offset(70, 0));
+    await tester.pumpAndSettle();
+
+    expect(lookupController.selections, hasLength(1));
+    expect(lookupController.selections.single.selectedText, 'それから');
+  });
+
+  testWidgets('long press drag looks up the selected text range', (
+    tester,
+  ) async {
+    final lookupController = _FakeLookupController();
+    await tester.pumpWidget(
+      _app(
+        _controller(
+          lookupController: lookupController,
+          content: 'alpha beta gamma',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final paragraphRect = tester.getRect(
+      find.byKey(const Key('reader-paragraph-0')),
+    );
+    final gesture = await tester.startGesture(
+      paragraphRect.centerLeft + const Offset(12, 0),
+    );
+    await tester.pump(const Duration(milliseconds: 650));
+    await gesture.moveTo(paragraphRect.centerLeft + const Offset(220, 0));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(lookupController.selections, hasLength(1));
+    expect(lookupController.selections.single.selectedText, 'alpha beta');
   });
 
   testWidgets(
@@ -74,13 +127,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final paragraphRect = tester.getRect(
-        find.textContaining('short tail.'),
+        find.byKey(const Key('reader-paragraph-0')),
       );
       await tester.tapAt(
-        Offset(
-          paragraphRect.right - 16,
-          paragraphRect.bottom - 18,
-        ),
+        Offset(paragraphRect.right - 16, paragraphRect.bottom - 18),
       );
       await tester.pumpAndSettle();
 
@@ -89,16 +139,60 @@ void main() {
     },
   );
 
-  testWidgets('provider unavailable shows error sheet and reader remains usable', (
+  testWidgets(
+    'provider unavailable shows error sheet and reader remains usable',
+    (tester) async {
+      await tester.pumpWidget(
+        _app(
+          _controller(
+            lookupController: _FakeLookupController(
+              error: const ApiError(
+                code: 'STUDY_PROVIDER_UNAVAILABLE',
+                message: 'Provider unavailable',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapFirstToken(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Provider unavailable'), findsOneWidget);
+      expect(find.byKey(const Key('reader-paragraph-0')), findsOneWidget);
+
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reader-tap-area')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kokoro'), findsOneWidget);
+    },
+  );
+
+  testWidgets('furigana visible body text tap looks up original token', (
     tester,
   ) async {
+    final lookedUp = <String>[];
     await tester.pumpWidget(
-      _app(
-        _controller(
-          lookupController: _FakeLookupController(
-            error: const ApiError(
-              code: 'STUDY_PROVIDER_UNAVAILABLE',
-              message: 'Provider unavailable',
+      MaterialApp(
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ReadingTextView(
+              text: '悲劇の最中',
+              fontSize: 36,
+              lineHeight: 1.55,
+              paragraphSpacing: 10,
+              furiganaEnabled: true,
+              furiganaGenerator: (_) async => const [
+                FuriganaSegment(text: '悲劇', reading: 'ひげき'),
+                FuriganaSegment(text: 'の'),
+                FuriganaSegment(text: '最中', reading: 'さいちゅう'),
+              ],
+              onLookup: (selection) => lookedUp.add(selection.selectedText),
             ),
           ),
         ),
@@ -106,24 +200,56 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('心'));
+    final paragraphRect = tester.getRect(
+      find.byKey(const Key('reader-paragraph-0')),
+    );
+    await tester.tapAt(
+      Offset(paragraphRect.left + 42, paragraphRect.bottom - 12),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Provider unavailable'), findsOneWidget);
-    expect(find.textContaining('先生の心'), findsOneWidget);
+    expect(lookedUp, ['悲劇']);
+  });
 
-    await tester.tapAt(const Offset(20, 20));
+  testWidgets('paragraph translate plus does not trigger lookup', (
+    tester,
+  ) async {
+    final lookedUp = <String>[];
+    final translated = <int?>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReadingTextView(
+            text: '悲劇の最中',
+            fontSize: 28,
+            onLookup: (selection) => lookedUp.add(selection.selectedText),
+            onTranslateParagraph: (selection) =>
+                translated.add(selection.paragraphIndex),
+          ),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.tap(find.byKey(const Key('paragraph-translate-hotspot-0')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Kokoro'), findsOneWidget);
+    expect(lookedUp, isEmpty);
+    expect(translated, [0]);
   });
 }
 
+Future<void> _tapFirstToken(WidgetTester tester) {
+  final paragraphRect = tester.getRect(
+    find.byKey(const Key('reader-paragraph-0')),
+  );
+  return tester.tapAt(paragraphRect.centerLeft + const Offset(44, 0));
+}
+
 Widget _app(ReaderController controller) {
-  return MaterialApp(home: ReaderScreen(bookId: 'book-1', controller: controller));
+  return MaterialApp(
+    home: ReaderScreen(bookId: 'book-1', controller: controller),
+  );
 }
 
 ReaderController _controller({
@@ -208,9 +334,7 @@ LocalReadingPosition _position() {
 }
 
 class _FakeLookupController extends LookupController {
-  _FakeLookupController({Object? error})
-    : _error = error,
-      super.test();
+  _FakeLookupController({Object? error}) : _error = error, super.test();
 
   final Object? _error;
   final List<dynamic> selections = [];
