@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ruby_text/flutter_ruby_text.dart';
 
 import '../../study/domain/paragraph_selection.dart';
 import '../../study/domain/reader_text_selection.dart';
 import '../../study/presentation/inline_paragraph_translation.dart';
 import '../../study/presentation/paragraph_translation_controller.dart';
+import '../domain/furigana_generator.dart';
 import '../domain/reader_preferences.dart';
+
+typedef FuriganaGenerator = Future<List<FuriganaSegment>> Function(String text);
 
 class ReadingTextView extends StatefulWidget {
   const ReadingTextView({
@@ -23,10 +26,13 @@ class ReadingTextView extends StatefulWidget {
     this.pageTurnMode = ReaderPageTurnMode.slide,
     this.onPageChanged,
     this.onPageCountChanged,
+    this.onPageParagraphsChanged,
     this.onLookup,
     this.onBlankTap,
     this.onTranslateParagraph,
     this.translationStateFor,
+    this.furiganaEnabled = false,
+    this.furiganaGenerator,
   });
 
   final String text;
@@ -39,11 +45,14 @@ class ReadingTextView extends StatefulWidget {
   final ReaderPageTurnMode pageTurnMode;
   final ValueChanged<int>? onPageChanged;
   final ValueChanged<int>? onPageCountChanged;
+  final ValueChanged<List<List<ParagraphSelection>>>? onPageParagraphsChanged;
   final ValueChanged<ReaderTextSelection>? onLookup;
   final VoidCallback? onBlankTap;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
   final ParagraphTranslationState? Function(ParagraphSelection selection)?
   translationStateFor;
+  final bool furiganaEnabled;
+  final FuriganaGenerator? furiganaGenerator;
 
   @override
   State<ReadingTextView> createState() => _ReadingTextViewState();
@@ -108,6 +117,20 @@ class _ReadingTextViewState extends State<ReadingTextView> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             widget.onPageCountChanged?.call(pages.length);
+            widget.onPageParagraphsChanged?.call(
+              pages
+                  .map(
+                    (page) => page
+                        .map(
+                          (paragraph) => ParagraphSelection(
+                            selectedParagraphText: paragraph.text,
+                            paragraphIndex: paragraph.sourceIndex,
+                          ),
+                        )
+                        .toList(growable: false),
+                  )
+                  .toList(growable: false),
+            );
           }
         });
 
@@ -127,7 +150,12 @@ class _ReadingTextViewState extends State<ReadingTextView> {
             itemBuilder: (context, index) {
               return _wrapPageTurnMode(
                 index: index,
-                child: _buildParagraphColumn(pages[index]),
+                child: _buildPage(
+                  context: context,
+                  paragraphs: pages[index],
+                  pageWidth: pageWidth,
+                  pageHeight: pageHeight,
+                ),
               );
             },
           ),
@@ -186,7 +214,36 @@ class _ReadingTextViewState extends State<ReadingTextView> {
     );
   }
 
-  Widget _buildParagraphColumn(List<_Paragraph> paragraphs) {
+  Widget _buildPage({
+    required BuildContext context,
+    required List<_Paragraph> paragraphs,
+    required double pageWidth,
+    required double pageHeight,
+  }) {
+    final child = _buildParagraphColumn(paragraphs, maxImageHeight: pageHeight);
+    final contentHeight = _measurePageContentHeight(
+      context: context,
+      paragraphs: paragraphs,
+      maxWidth: pageWidth,
+      pageHeight: pageHeight,
+    );
+    if (!widget.furiganaEnabled && contentHeight <= pageHeight) {
+      return child;
+    }
+
+    return SingleChildScrollView(
+      primary: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: pageHeight),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildParagraphColumn(
+    List<_Paragraph> paragraphs, {
+    double? maxImageHeight,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -196,10 +253,13 @@ class _ReadingTextViewState extends State<ReadingTextView> {
             fontSize: widget.fontSize,
             lineHeight: widget.lineHeight,
             paragraphSpacing: widget.paragraphSpacing,
+            maxImageHeight: maxImageHeight,
             onLookup: widget.onLookup,
             onBlankTap: widget.onBlankTap,
             onTranslateParagraph: widget.onTranslateParagraph,
             translationStateFor: widget.translationStateFor,
+            furiganaEnabled: widget.furiganaEnabled,
+            furiganaGenerator: widget.furiganaGenerator,
           ),
       ],
     );
@@ -227,18 +287,24 @@ class _ReadingTextViewState extends State<ReadingTextView> {
       1.0,
       pageHeight - _paginationSafetyInset,
     );
-
     for (final paragraph in paragraphs) {
-      final paragraphHeight = paragraph.epubImageUri == null
-          ? _measureParagraphHeight(
-              context: context,
-              paragraph: paragraph,
-              style: textStyle,
-              maxWidth: pageWidth,
-            )
-          : pageHeight;
-      if (paragraph.epubImageUri == null &&
-          paragraphHeight + widget.paragraphSpacing > effectivePageHeight) {
+      if (paragraph.epubImageUri != null) {
+        if (currentPage.isNotEmpty) {
+          pages.add(currentPage);
+          currentPage = <_Paragraph>[];
+          usedHeight = 0;
+        }
+        pages.add([paragraph]);
+        continue;
+      }
+
+      final paragraphHeight = _measureParagraphHeight(
+        context: context,
+        paragraph: paragraph,
+        style: textStyle,
+        maxWidth: pageWidth,
+      );
+      if (paragraphHeight + widget.paragraphSpacing > effectivePageHeight) {
         if (currentPage.isNotEmpty) {
           pages.add(currentPage);
           currentPage = <_Paragraph>[];
@@ -276,12 +342,6 @@ class _ReadingTextViewState extends State<ReadingTextView> {
 
       currentPage.add(paragraph);
       usedHeight += blockHeight;
-
-      if (paragraph.epubImageUri != null) {
-        pages.add(currentPage);
-        currentPage = <_Paragraph>[];
-        usedHeight = 0;
-      }
     }
 
     if (currentPage.isNotEmpty) {
@@ -340,12 +400,13 @@ class _ReadingTextViewState extends State<ReadingTextView> {
     while (low <= high) {
       final mid = (low + high) ~/ 2;
       final candidate = text.substring(0, mid).trimRight();
-      final height = _measureTextHeight(
-        context: context,
+      final height = _measureParagraphTextMetrics(
         text: '\u3000$candidate',
         style: style,
         maxWidth: maxWidth,
-      );
+        textDirection: Directionality.of(context),
+        furiganaEnabled: widget.furiganaEnabled,
+      ).visualHeight;
       if (height <= maxHeight) {
         best = mid;
         low = mid + 1;
@@ -374,12 +435,85 @@ class _ReadingTextViewState extends State<ReadingTextView> {
     required TextStyle style,
     required double maxWidth,
   }) {
-    return _measureTextHeight(
-      context: context,
+    return _measureParagraphTextMetrics(
       text: paragraph.displayText,
       style: style,
       maxWidth: maxWidth,
+      textDirection: Directionality.of(context),
+      furiganaEnabled: widget.furiganaEnabled,
+    ).visualHeight;
+  }
+
+  double _measurePageContentHeight({
+    required BuildContext context,
+    required List<_Paragraph> paragraphs,
+    required double maxWidth,
+    required double pageHeight,
+  }) {
+    final paragraphStyle = TextStyle(
+      fontSize: widget.fontSize,
+      height: widget.lineHeight,
+      letterSpacing: 0,
     );
+    return paragraphs.fold<double>(
+      0,
+      (total, paragraph) =>
+          total +
+          _measureParagraphBlockHeight(
+            context: context,
+            paragraph: paragraph,
+            paragraphStyle: paragraphStyle,
+            maxWidth: maxWidth,
+            pageHeight: pageHeight,
+          ),
+    );
+  }
+
+  double _measureParagraphBlockHeight({
+    required BuildContext context,
+    required _Paragraph paragraph,
+    required TextStyle paragraphStyle,
+    required double maxWidth,
+    required double pageHeight,
+  }) {
+    if (paragraph.epubImageUri != null) {
+      return _boundedImageHeight(pageHeight) + 24;
+    }
+
+    final paragraphHeight = _measureParagraphHeight(
+      context: context,
+      paragraph: paragraph,
+      style: paragraphStyle,
+      maxWidth: maxWidth,
+    );
+    final translationState = widget.translationStateFor?.call(
+      ParagraphSelection(
+        selectedParagraphText: paragraph.text,
+        paragraphIndex: paragraph.sourceIndex,
+      ),
+    );
+    final translationText = translationState == null
+        ? null
+        : InlineParagraphTranslation.textForState(translationState);
+    if (translationText == null || translationText.isEmpty) {
+      return paragraphHeight + widget.paragraphSpacing;
+    }
+
+    final translationHeight = _measureTextHeight(
+      context: context,
+      text: translationText,
+      style: TextStyle(
+        fontSize: widget.fontSize,
+        height: 1.64,
+        letterSpacing: 0,
+      ),
+      maxWidth: maxWidth,
+    );
+    return paragraphHeight + 8 + translationHeight + 18;
+  }
+
+  double _boundedImageHeight(double pageHeight) {
+    return math.max(1.0, math.min(520.0, pageHeight - 24));
   }
 
   double _measureTextHeight({
@@ -418,21 +552,27 @@ class _ParagraphView extends StatelessWidget {
     required this.fontSize,
     required this.lineHeight,
     required this.paragraphSpacing,
+    this.maxImageHeight,
     this.onLookup,
     this.onBlankTap,
     this.onTranslateParagraph,
     this.translationStateFor,
+    this.furiganaEnabled = false,
+    this.furiganaGenerator,
   });
 
   final _Paragraph paragraph;
   final double fontSize;
   final double lineHeight;
   final double paragraphSpacing;
+  final double? maxImageHeight;
   final ValueChanged<ReaderTextSelection>? onLookup;
   final VoidCallback? onBlankTap;
   final ValueChanged<ParagraphSelection>? onTranslateParagraph;
   final ParagraphTranslationState? Function(ParagraphSelection selection)?
   translationStateFor;
+  final bool furiganaEnabled;
+  final FuriganaGenerator? furiganaGenerator;
 
   @override
   Widget build(BuildContext context) {
@@ -441,6 +581,7 @@ class _ParagraphView extends StatelessWidget {
       return _EpubImagePage(
         paragraphIndex: paragraph.index,
         imageUri: imageUri,
+        maxHeight: maxImageHeight,
       );
     }
 
@@ -461,52 +602,76 @@ class _ParagraphView extends StatelessWidget {
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final hotspotOffset = _hotspotOffset(
-              context: context,
+            final metrics = _measureParagraphTextMetrics(
+              text: paragraph.displayText,
               style: textStyle,
+              maxWidth: constraints.maxWidth,
+              textDirection: Directionality.of(context),
+              furiganaEnabled: furiganaEnabled,
+            );
+            final iconSize = (fontSize * 0.78).clamp(14.0, 20.0);
+            final hotspotOffset = metrics.hotspotOffset(
+              iconSize: iconSize,
               maxWidth: constraints.maxWidth,
             );
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: onBlankTap,
-              child: SizedBox(
-                width: constraints.maxWidth,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    _LookupParagraphText(
-                      text: paragraph.displayText,
-                      style: textStyle,
-                      onTap: onLookup == null
-                          ? null
-                          : () => onLookup!(_lookupSelection()),
-                    ),
-                    Positioned(
-                      left: hotspotOffset.dx,
-                      top: hotspotOffset.dy,
-                      child: GestureDetector(
-                        key: Key(
-                          'paragraph-translate-hotspot-${paragraph.index}',
-                        ),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: onTranslateParagraph == null
-                            ? null
-                            : () => onTranslateParagraph!(selection),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 2, 18, 8),
-                          child: Icon(
-                            Icons.add_circle_outline,
-                            size: (fontSize * 0.78).clamp(14.0, 20.0),
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.18),
+              child: furiganaEnabled
+                  ? SizedBox(
+                      width: constraints.maxWidth,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _LookupParagraphText(
+                            key: Key('reader-paragraph-${paragraph.index}'),
+                            text: paragraph.displayText,
+                            style: textStyle,
+                            furiganaEnabled: furiganaEnabled,
+                            furiganaGenerator: furiganaGenerator,
+                            onBlankTap: onBlankTap,
+                            onLookupText: onLookup == null
+                                ? null
+                                : (selectedText) =>
+                                      onLookup!(_lookupSelection(selectedText)),
                           ),
-                        ),
+                          Positioned(
+                            left: metrics.hotspotLeft(
+                              iconSize: iconSize,
+                              maxWidth: constraints.maxWidth,
+                            ),
+                            bottom: 0,
+                            child: _translateHotspot(context, selection),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SizedBox(
+                      width: constraints.maxWidth,
+                      height: metrics.visualHeight,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _LookupParagraphText(
+                            key: Key('reader-paragraph-${paragraph.index}'),
+                            text: paragraph.displayText,
+                            style: textStyle,
+                            furiganaEnabled: furiganaEnabled,
+                            furiganaGenerator: furiganaGenerator,
+                            onBlankTap: onBlankTap,
+                            onLookupText: onLookup == null
+                                ? null
+                                : (selectedText) =>
+                                      onLookup!(_lookupSelection(selectedText)),
+                          ),
+                          Positioned(
+                            left: hotspotOffset.dx,
+                            top: hotspotOffset.dy,
+                            child: _translateHotspot(context, selection),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
             );
           },
         ),
@@ -520,61 +685,37 @@ class _ParagraphView extends StatelessWidget {
     );
   }
 
-  ReaderTextSelection _lookupSelection() {
-    final selectedText = _firstLookupToken(paragraph.text);
+  ReaderTextSelection _lookupSelection(String selectedText) {
     return ReaderTextSelection(
       selectedText: selectedText,
       paragraphContext: paragraph.text,
     );
   }
 
-  Offset _hotspotOffset({
-    required BuildContext context,
-    required TextStyle style,
-    required double maxWidth,
-  }) {
-    final textPainter = TextPainter(
-      text: TextSpan(text: paragraph.displayText, style: style),
-      textDirection: Directionality.of(context),
-      maxLines: null,
-    )..layout(maxWidth: maxWidth);
-    final lines = textPainter.computeLineMetrics();
-    if (lines.isEmpty) {
-      return Offset.zero;
-    }
-
-    final lastLine = lines.last;
-    final left = (lastLine.left + lastLine.width + 4).clamp(0.0, maxWidth - 44);
-    final top = (lastLine.baseline - lastLine.ascent - 6).clamp(
-      0.0,
-      double.infinity,
+  Widget _translateHotspot(BuildContext context, ParagraphSelection selection) {
+    final iconSize = (fontSize * 0.78).clamp(14.0, 20.0);
+    final hitSize = math.max(24.0, iconSize + 4);
+    return GestureDetector(
+      key: Key('paragraph-translate-hotspot-${paragraph.index}'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onTranslateParagraph == null
+          ? null
+          : () => onTranslateParagraph!(selection),
+      child: SizedBox.square(
+        dimension: hitSize,
+        child: Icon(
+          Icons.add_circle_outline,
+          size: iconSize,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.18),
+        ),
+      ),
     );
-    return Offset(left, top);
-  }
-
-  String _firstLookupToken(String value) {
-    final hanMatches = RegExp(
-      r'[\p{Script=Han}]+',
-      unicode: true,
-    ).allMatches(value).toList(growable: false);
-    if (hanMatches.isNotEmpty) {
-      return hanMatches.last.group(0)!.characters.last;
-    }
-
-    final kanaMatch = RegExp(
-      r'[\p{Script=Hiragana}\p{Script=Katakana}]+',
-      unicode: true,
-    ).firstMatch(value);
-    return kanaMatch?.group(0) ?? value.trim();
   }
 }
 
 class _Paragraph {
-  const _Paragraph({
-    required this.index,
-    required this.text,
-    int? sourceIndex,
-  }) : sourceIndex = sourceIndex ?? index;
+  const _Paragraph({required this.index, required this.text, int? sourceIndex})
+    : sourceIndex = sourceIndex ?? index;
 
   final int index;
   final int sourceIndex;
@@ -594,57 +735,450 @@ class _Paragraph {
   }
 }
 
+_ParagraphTextMetrics _measureParagraphTextMetrics({
+  required String text,
+  required TextStyle style,
+  required double maxWidth,
+  required TextDirection textDirection,
+  required bool furiganaEnabled,
+}) {
+  final textPainter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: textDirection,
+    maxLines: null,
+  )..layout(maxWidth: maxWidth);
+  final lines = textPainter.computeLineMetrics();
+  if (lines.isEmpty) {
+    final fontSize = style.fontSize ?? 16;
+    return _ParagraphTextMetrics(
+      visualHeight: fontSize,
+      lastLineEndX: 0,
+      bodyCenterY: fontSize / 2,
+    );
+  }
+
+  final fontSize = style.fontSize ?? 16;
+  if (!furiganaEnabled) {
+    final lastLine = lines.last;
+    final bodyTop = lastLine.baseline - lastLine.ascent;
+    return _ParagraphTextMetrics(
+      visualHeight: textPainter.height,
+      lastLineEndX: lastLine.left + lastLine.width,
+      bodyCenterY: bodyTop + (lastLine.ascent + lastLine.descent) / 2,
+    );
+  }
+
+  final rubyFontSize = fontSize * 0.48;
+  final textLineHeight = fontSize * (style.height ?? 1.0);
+  final lastLine = lines.last;
+  final visualHeight = _estimateFuriganaVisualHeight(
+    text: text,
+    maxWidth: maxWidth,
+    fontSize: fontSize,
+    rubyFontSize: rubyFontSize,
+    textLineHeight: textLineHeight,
+  );
+  final bodyTop = lastLine.baseline - lastLine.ascent;
+  return _ParagraphTextMetrics(
+    visualHeight: visualHeight,
+    lastLineEndX: lastLine.left + lastLine.width,
+    bodyCenterY: bodyTop + (lastLine.ascent + lastLine.descent) / 2,
+  );
+}
+
+double _estimateFuriganaVisualHeight({
+  required String text,
+  required double maxWidth,
+  required double fontSize,
+  required double rubyFontSize,
+  required double textLineHeight,
+}) {
+  final visibleRuneCount = text.runes
+      .where((rune) => String.fromCharCode(rune).trim().isNotEmpty)
+      .length;
+  final estimatedUnitWidth = fontSize * 1.55 + 4;
+  final estimatedCharsPerLine = math.max(
+    1,
+    (maxWidth / estimatedUnitWidth).floor(),
+  );
+  final estimatedLineCount = math.max(
+    1,
+    (visibleRuneCount / estimatedCharsPerLine).ceil(),
+  );
+  final hitSize = math.max(24.0, (fontSize * 0.78).clamp(14.0, 20.0) + 4);
+  return estimatedLineCount * (rubyFontSize + textLineHeight + 16) + hitSize;
+}
+
+class _ParagraphTextMetrics {
+  const _ParagraphTextMetrics({
+    required this.visualHeight,
+    required this.lastLineEndX,
+    required this.bodyCenterY,
+  });
+
+  final double visualHeight;
+  final double lastLineEndX;
+  final double bodyCenterY;
+
+  double hotspotLeft({required double iconSize, required double maxWidth}) {
+    final hitSize = math.max(24.0, iconSize + 4);
+    return (lastLineEndX + 3)
+        .clamp(0.0, math.max(0.0, maxWidth - hitSize))
+        .toDouble();
+  }
+
+  Offset hotspotOffset({required double iconSize, required double maxWidth}) {
+    final hitSize = math.max(24.0, iconSize + 4);
+    final left = hotspotLeft(iconSize: iconSize, maxWidth: maxWidth);
+    final top = (bodyCenterY - hitSize / 2).clamp(
+      0.0,
+      math.max(0.0, visualHeight - hitSize),
+    );
+    return Offset(left, top.toDouble());
+  }
+}
+
 class _LookupParagraphText extends StatefulWidget {
   const _LookupParagraphText({
+    super.key,
     required this.text,
     required this.style,
-    required this.onTap,
+    required this.furiganaEnabled,
+    this.furiganaGenerator,
+    required this.onBlankTap,
+    required this.onLookupText,
   });
 
   final String text;
   final TextStyle style;
-  final VoidCallback? onTap;
+  final bool furiganaEnabled;
+  final FuriganaGenerator? furiganaGenerator;
+  final VoidCallback? onBlankTap;
+  final ValueChanged<String>? onLookupText;
 
   @override
   State<_LookupParagraphText> createState() => _LookupParagraphTextState();
 }
 
 class _LookupParagraphTextState extends State<_LookupParagraphText> {
-  late final TapGestureRecognizer _recognizer;
+  int? _selectionStart;
+  int? _selectionEnd;
+  Future<List<FuriganaSegment>>? _furiganaFuture;
+  String? _furiganaText;
 
   @override
   void initState() {
     super.initState();
-    _recognizer = TapGestureRecognizer();
+    _syncFuriganaFuture();
   }
 
   @override
-  void dispose() {
-    _recognizer.dispose();
-    super.dispose();
+  void didUpdateWidget(covariant _LookupParagraphText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text ||
+        oldWidget.furiganaEnabled != widget.furiganaEnabled ||
+        oldWidget.furiganaGenerator != widget.furiganaGenerator) {
+      _syncFuriganaFuture();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    _recognizer.onTap = widget.onTap;
-    return Text.rich(
-      TextSpan(
-        text: widget.text,
-        style: widget.style,
-        recognizer: widget.onTap == null ? null : _recognizer,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTapUp: widget.onLookupText == null
+              ? null
+              : (details) => _lookupAt(
+                  context: context,
+                  maxWidth: constraints.maxWidth,
+                  localPosition: details.localPosition,
+                ),
+          onLongPressStart: widget.onLookupText == null
+              ? null
+              : (details) {
+                  final offset = _textOffsetAt(
+                    context: context,
+                    maxWidth: constraints.maxWidth,
+                    localPosition: details.localPosition,
+                  );
+                  setState(() {
+                    _selectionStart = offset;
+                    _selectionEnd = offset;
+                  });
+                },
+          onLongPressMoveUpdate: widget.onLookupText == null
+              ? null
+              : (details) {
+                  final offset = _textOffsetAt(
+                    context: context,
+                    maxWidth: constraints.maxWidth,
+                    localPosition: details.localPosition,
+                  );
+                  setState(() => _selectionEnd = offset);
+                },
+          onLongPressEnd: widget.onLookupText == null
+              ? null
+              : (_) => _lookupSelectedText(),
+          child: _buildText(context),
+        );
+      },
     );
+  }
+
+  void _syncFuriganaFuture() {
+    if (!widget.furiganaEnabled) {
+      _furiganaText = null;
+      _furiganaFuture = null;
+      return;
+    }
+
+    _furiganaText = widget.text;
+    _furiganaFuture =
+        (widget.furiganaGenerator ?? const LocalFuriganaGenerator().generate)(
+          widget.text,
+        );
+  }
+
+  Widget _buildText(BuildContext context) {
+    if (!widget.furiganaEnabled || _normalizedSelection() != null) {
+      return _buildPlainText(context);
+    }
+
+    final future = _furiganaFuture;
+    if (future == null || _furiganaText != widget.text) {
+      return _buildPlainText(context);
+    }
+
+    return FutureBuilder<List<FuriganaSegment>>(
+      future: future,
+      builder: (context, snapshot) {
+        final segments = snapshot.data;
+        if (segments == null) {
+          return _buildPlainText(context);
+        }
+        return RubyText(
+          _rubyWords(segments),
+          key: const Key('reader-ruby-text'),
+          spacing: 0,
+          style: widget.style,
+          rubyStyle: widget.style.copyWith(
+            fontSize: widget.style.fontSize == null
+                ? null
+                : widget.style.fontSize! * 0.48,
+            height: 1.0,
+            color: widget.style.color?.withValues(alpha: 0.72),
+          ),
+          textDirection: Directionality.of(context),
+          softWrap: true,
+          autoLetterSpacing: true,
+        );
+      },
+    );
+  }
+
+  Widget _buildPlainText(BuildContext context) {
+    if (_normalizedSelection() == null) {
+      return Text(widget.text, style: widget.style);
+    }
+    return RichText(text: _textSpan(context));
+  }
+
+  List<RubyTextWord> _rubyWords(List<FuriganaSegment> segments) {
+    return [
+      for (final segment in segments)
+        if (segment.reading == null)
+          for (final rune in segment.text.runes)
+            RubyTextWord(String.fromCharCode(rune))
+        else
+          RubyTextWord(segment.text, ruby: segment.reading),
+    ];
+  }
+
+  TextSpan _textSpan(BuildContext context) {
+    final selection = _normalizedSelection();
+    if (selection == null) {
+      return TextSpan(text: widget.text, style: widget.style);
+    }
+
+    final start = selection.$1;
+    final end = selection.$2;
+    final selectedStyle = widget.style.copyWith(
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.18),
+    );
+    return TextSpan(
+      style: widget.style,
+      children: [
+        TextSpan(text: widget.text.substring(0, start)),
+        TextSpan(text: widget.text.substring(start, end), style: selectedStyle),
+        TextSpan(text: widget.text.substring(end)),
+      ],
+    );
+  }
+
+  (int, int)? _normalizedSelection() {
+    final start = _selectionStart;
+    final end = _selectionEnd;
+    if (start == null || end == null || start == end) {
+      return null;
+    }
+    final lower = math.min(start, end).clamp(0, widget.text.length).toInt();
+    final upper = math.max(start, end).clamp(0, widget.text.length).toInt();
+    if (lower == upper) {
+      return null;
+    }
+    return (lower, upper);
+  }
+
+  void _lookupAt({
+    required BuildContext context,
+    required double maxWidth,
+    required Offset localPosition,
+  }) {
+    final painter = _textPainter(context: context, maxWidth: maxWidth);
+    final offset = painter.getPositionForOffset(localPosition).offset;
+    final range = _tokenRangeAt(offset);
+    if (range == null || !_isInsideTokenBounds(painter, range, localPosition)) {
+      widget.onBlankTap?.call();
+      return;
+    }
+    final token = widget.text.substring(range.$1, range.$2).trim();
+    if (token.isNotEmpty) {
+      widget.onLookupText!(token);
+    }
+  }
+
+  void _lookupSelectedText() {
+    final selection = _normalizedSelection();
+    if (selection == null) {
+      setState(() {
+        _selectionStart = null;
+        _selectionEnd = null;
+      });
+      return;
+    }
+    final text = widget.text.substring(selection.$1, selection.$2).trim();
+    setState(() {
+      _selectionStart = null;
+      _selectionEnd = null;
+    });
+    if (text.isNotEmpty) {
+      widget.onLookupText!(text);
+    }
+  }
+
+  int _textOffsetAt({
+    required BuildContext context,
+    required double maxWidth,
+    required Offset localPosition,
+  }) {
+    final painter = _textPainter(context: context, maxWidth: maxWidth);
+    return painter.getPositionForOffset(localPosition).offset;
+  }
+
+  TextPainter _textPainter({
+    required BuildContext context,
+    required double maxWidth,
+  }) {
+    return TextPainter(
+      text: TextSpan(text: widget.text, style: widget.style),
+      textDirection: Directionality.of(context),
+      maxLines: null,
+    )..layout(maxWidth: maxWidth);
+  }
+
+  (int, int)? _tokenRangeAt(int offset) {
+    if (widget.text.trim().isEmpty) {
+      return null;
+    }
+    final index = _nearestTokenIndex(offset);
+    if (index == null) {
+      return null;
+    }
+    final kind = _tokenKind(widget.text[index]);
+    if (kind == _TokenKind.other) {
+      return null;
+    }
+
+    var start = index;
+    while (start > 0 && _tokenKind(widget.text[start - 1]) == kind) {
+      start -= 1;
+    }
+    var end = index + 1;
+    while (end < widget.text.length && _tokenKind(widget.text[end]) == kind) {
+      end += 1;
+    }
+    return (start, end);
+  }
+
+  bool _isInsideTokenBounds(
+    TextPainter painter,
+    (int, int) range,
+    Offset position,
+  ) {
+    final boxes = painter.getBoxesForSelection(
+      TextSelection(baseOffset: range.$1, extentOffset: range.$2),
+    );
+    return boxes.any((box) => box.toRect().inflate(8).contains(position));
+  }
+
+  int? _nearestTokenIndex(int offset) {
+    final bounded = offset
+        .clamp(0, math.max(0, widget.text.length - 1))
+        .toInt();
+    if (_tokenKind(widget.text[bounded]) != _TokenKind.other) {
+      return bounded;
+    }
+    for (var distance = 1; distance <= 2; distance++) {
+      final left = bounded - distance;
+      if (left >= 0 && _tokenKind(widget.text[left]) != _TokenKind.other) {
+        return left;
+      }
+      final right = bounded + distance;
+      if (right < widget.text.length &&
+          _tokenKind(widget.text[right]) != _TokenKind.other) {
+        return right;
+      }
+    }
+    return null;
+  }
+
+  _TokenKind _tokenKind(String char) {
+    if (RegExp(
+      r'[\p{Script=Hiragana}\p{Script=Katakana}]',
+      unicode: true,
+    ).hasMatch(char)) {
+      return _TokenKind.kana;
+    }
+    if (RegExp(r'[\p{Script=Han}]', unicode: true).hasMatch(char)) {
+      return _TokenKind.han;
+    }
+    if (RegExp(r'[A-Za-z0-9]').hasMatch(char)) {
+      return _TokenKind.latin;
+    }
+    return _TokenKind.other;
   }
 }
 
+enum _TokenKind { kana, han, latin, other }
+
 class _EpubImagePage extends StatelessWidget {
-  const _EpubImagePage({required this.paragraphIndex, required this.imageUri});
+  const _EpubImagePage({
+    required this.paragraphIndex,
+    required this.imageUri,
+    this.maxHeight,
+  });
 
   final int paragraphIndex;
   final Uri imageUri;
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
+    final height = math.max(1.0, math.min(520.0, (maxHeight ?? 544) - 24));
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: GestureDetector(
@@ -653,7 +1187,7 @@ class _EpubImagePage extends StatelessWidget {
         onTap: () => _openPreview(context),
         child: SizedBox(
           width: double.infinity,
-          height: 520,
+          height: height,
           child: Center(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(6),
