@@ -8,6 +8,7 @@ import 'package:study_for_read_mobile/src/features/library/data/local_chapter_re
 import 'package:study_for_read_mobile/src/features/library/domain/local_book.dart';
 import 'package:study_for_read_mobile/src/features/library/domain/local_chapter.dart';
 import 'package:study_for_read_mobile/src/features/library/domain/local_reading_position.dart';
+import 'package:study_for_read_mobile/src/features/reader/domain/furigana_generator.dart';
 import 'package:study_for_read_mobile/src/features/reader/data/local_reading_position_repository.dart';
 import 'package:study_for_read_mobile/src/features/reader/data/local_reader_preferences_repository.dart';
 import 'package:study_for_read_mobile/src/features/reader/domain/reader_preferences.dart';
@@ -37,6 +38,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('\u3000first chapter text'), findsOneWidget);
+  });
+
+  testWidgets('fresh reader uses dense novel typography by default', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_controller()));
+    await tester.pumpAndSettle();
+
+    final textView = tester.widget<ReadingTextView>(
+      find.byType(ReadingTextView),
+    );
+    expect(textView.fontSize, 18);
+    expect(textView.lineHeight, 1.55);
+    expect(textView.paragraphSpacing, 10);
   });
 
   testWidgets('long chapter renders as multiple reader pages', (tester) async {
@@ -391,7 +406,7 @@ void main() {
     final textView = tester.widget<ReadingTextView>(
       find.byType(ReadingTextView),
     );
-    expect(textView.fontSize, 22);
+    expect(textView.fontSize, 20);
   });
 
   testWidgets('settings background selection persists reader background', (
@@ -490,6 +505,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(preferencesRepository.saved.last.volumeKeyPagingEnabled, isTrue);
+  });
+
+  testWidgets('settings furigana switch persists preference', (tester) async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    await tester.pumpWidget(
+      _app(_controller(preferencesRepository: preferencesRepository)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('reader-tap-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-settings-button')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('reader-furigana-switch')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('reader-furigana-switch')));
+    await tester.pumpAndSettle();
+
+    expect(preferencesRepository.saved.last.furiganaEnabled, isTrue);
   });
 
   testWidgets('volume down advances page when volume key paging is enabled', (
@@ -593,6 +627,55 @@ void main() {
 
     expect(find.byKey(const Key('epub-image-page-0')), findsOneWidget);
     expect(find.textContaining('![epub-image]'), findsNothing);
+  });
+
+  testWidgets('reading text view shows ruby text when furigana is enabled', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReadingTextView(
+            text: '悲劇の最中',
+            fontSize: ReaderController.defaultFontSize,
+            furiganaEnabled: true,
+            furiganaGenerator: _fakeFurigana,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ひげき'), findsOneWidget);
+    expect(find.text('悲劇'), findsOneWidget);
+    expect(find.text('さいちゅう'), findsOneWidget);
+    expect(find.text('最中'), findsOneWidget);
+  });
+
+  testWidgets('furigana mode lookup still sends original text', (tester) async {
+    final lookedUp = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReadingTextView(
+            text: '悲劇の最中',
+            fontSize: ReaderController.defaultFontSize,
+            furiganaEnabled: true,
+            furiganaGenerator: _fakeFurigana,
+            onLookup: (selection) => lookedUp.add(selection.selectedText),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final paragraphRect = tester.getRect(
+      find.byKey(const Key('reader-paragraph-0')),
+    );
+    await tester.tapAt(paragraphRect.centerLeft + const Offset(44, 0));
+    await tester.pumpAndSettle();
+
+    expect(lookedUp, ['悲劇']);
   });
 
   testWidgets('tapping an EPUB image page opens a larger preview', (
@@ -756,6 +839,25 @@ void main() {
     expect(find.text('未找到本地书籍'), findsOneWidget);
     expect(find.text('first chapter text'), findsNothing);
   });
+}
+
+Future<List<FuriganaSegment>> _fakeFurigana(String text) async {
+  return [
+    for (final segment
+        in text
+            .splitMapJoin(
+              RegExp('悲劇|最中'),
+              onMatch: (match) => '\u0000${match.group(0)}\u0000',
+              onNonMatch: (value) => value,
+            )
+            .split('\u0000')
+            .where((value) => value.isNotEmpty))
+      switch (segment) {
+        '悲劇' => const FuriganaSegment(text: '悲劇', reading: 'ひげき'),
+        '最中' => const FuriganaSegment(text: '最中', reading: 'さいちゅう'),
+        _ => FuriganaSegment(text: segment),
+      },
+  ];
 }
 
 bool _isOpaqueContainer(Widget widget) {

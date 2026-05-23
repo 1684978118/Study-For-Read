@@ -172,6 +172,17 @@ void main() {
     expect(controller.fontSize, ReaderController.maxFontSize);
   });
 
+  test('fresh reader uses dense novel typography defaults', () async {
+    final controller = _controller();
+
+    await controller.load();
+
+    expect(ReaderController.defaultFontSize, 18);
+    expect(controller.fontSize, 18);
+    expect(controller.readerPreferences.lineHeight, 1.55);
+    expect(controller.readerPreferences.paragraphSpacing, 10);
+  });
+
   test('loads persisted reader preferences on load', () async {
     final preferencesRepository = _FakeReaderPreferencesRepository(
       saved: ReaderPreferences.defaults.copyWith(fontSize: 24),
@@ -331,6 +342,19 @@ void main() {
 
     expect(controller.readerPreferences.volumeKeyPagingEnabled, isTrue);
     expect(preferencesRepository.saved.single.volumeKeyPagingEnabled, isTrue);
+  });
+
+  test('furigana preference persists', () async {
+    final preferencesRepository = _FakeReaderPreferencesRepository();
+    final controller = _controller(
+      preferencesRepository: preferencesRepository,
+    );
+
+    await controller.load();
+    await controller.setFuriganaEnabled(true);
+
+    expect(controller.readerPreferences.furiganaEnabled, isTrue);
+    expect(preferencesRepository.saved.single.furiganaEnabled, isTrue);
   });
 }
 

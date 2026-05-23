@@ -37,6 +37,22 @@ enum ReaderPageTurnMode {
   }
 }
 
+enum TranslationEngine {
+  localMachine('local_machine'),
+  ai('ai');
+
+  const TranslationEngine(this.storageValue);
+
+  final String storageValue;
+
+  static TranslationEngine fromStorageValue(String value) {
+    return values.firstWhere(
+      (engine) => engine.storageValue == value,
+      orElse: () => TranslationEngine.ai,
+    );
+  }
+}
+
 class ReaderPreferences {
   const ReaderPreferences({
     required this.fontSize,
@@ -49,12 +65,17 @@ class ReaderPreferences {
     required this.eyeProtectionEnabled,
     required this.pageTurnMode,
     required this.volumeKeyPagingEnabled,
+    required this.lookupTranslationEngine,
+    required this.paragraphTranslationEngine,
+    required this.localTranslationModelsReady,
+    required this.aiPrefetchPageCount,
+    required this.furiganaEnabled,
   });
 
   static const defaults = ReaderPreferences(
-    fontSize: 20,
-    lineHeight: 1.72,
-    paragraphSpacing: 18,
+    fontSize: 18,
+    lineHeight: 1.55,
+    paragraphSpacing: 10,
     backgroundTheme: ReaderBackgroundTheme.paperWhite,
     nightModeEnabled: false,
     previousBackgroundTheme: ReaderBackgroundTheme.paperWhite,
@@ -62,6 +83,11 @@ class ReaderPreferences {
     eyeProtectionEnabled: false,
     pageTurnMode: ReaderPageTurnMode.slide,
     volumeKeyPagingEnabled: false,
+    lookupTranslationEngine: TranslationEngine.localMachine,
+    paragraphTranslationEngine: TranslationEngine.ai,
+    localTranslationModelsReady: false,
+    aiPrefetchPageCount: 3,
+    furiganaEnabled: false,
   );
 
   final double fontSize;
@@ -74,6 +100,11 @@ class ReaderPreferences {
   final bool eyeProtectionEnabled;
   final ReaderPageTurnMode pageTurnMode;
   final bool volumeKeyPagingEnabled;
+  final TranslationEngine lookupTranslationEngine;
+  final TranslationEngine paragraphTranslationEngine;
+  final bool localTranslationModelsReady;
+  final int aiPrefetchPageCount;
+  final bool furiganaEnabled;
 
   ReaderPreferences copyWith({
     double? fontSize,
@@ -86,6 +117,11 @@ class ReaderPreferences {
     bool? eyeProtectionEnabled,
     ReaderPageTurnMode? pageTurnMode,
     bool? volumeKeyPagingEnabled,
+    TranslationEngine? lookupTranslationEngine,
+    TranslationEngine? paragraphTranslationEngine,
+    bool? localTranslationModelsReady,
+    int? aiPrefetchPageCount,
+    bool? furiganaEnabled,
   }) {
     return ReaderPreferences(
       fontSize: fontSize ?? this.fontSize,
@@ -101,6 +137,14 @@ class ReaderPreferences {
       pageTurnMode: pageTurnMode ?? this.pageTurnMode,
       volumeKeyPagingEnabled:
           volumeKeyPagingEnabled ?? this.volumeKeyPagingEnabled,
+      lookupTranslationEngine:
+          lookupTranslationEngine ?? this.lookupTranslationEngine,
+      paragraphTranslationEngine:
+          paragraphTranslationEngine ?? this.paragraphTranslationEngine,
+      localTranslationModelsReady:
+          localTranslationModelsReady ?? this.localTranslationModelsReady,
+      aiPrefetchPageCount: aiPrefetchPageCount ?? this.aiPrefetchPageCount,
+      furiganaEnabled: furiganaEnabled ?? this.furiganaEnabled,
     );
   }
 }

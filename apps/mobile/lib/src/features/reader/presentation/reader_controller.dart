@@ -42,7 +42,7 @@ class ReaderController extends ChangeNotifier {
 
   static const double minFontSize = 16;
   static const double maxFontSize = 28;
-  static const double defaultFontSize = 20;
+  static const double defaultFontSize = 18;
   static const double minLineHeight = 1.2;
   static const double maxLineHeight = 2.4;
   static const double minParagraphSpacing = 0;
@@ -315,6 +315,12 @@ class ReaderController extends ChangeNotifier {
     return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
   }
 
+  Future<void> setFuriganaEnabled(bool value) {
+    _readerPreferences = _readerPreferences.copyWith(furiganaEnabled: value);
+    notifyListeners();
+    return _preferencesRepository?.save(_readerPreferences) ?? Future.value();
+  }
+
   Future<void> saveProgress() async {
     final book = _book;
     if (book == null || _chapters.isEmpty) {
@@ -363,6 +369,7 @@ class ReaderController extends ChangeNotifier {
       ownerUserId: book.ownerUserId,
       sourceLang: book.sourceLang,
       targetLang: book.targetLang,
+      translationEngine: _readerPreferences.lookupTranslationEngine,
     );
     _lookupController = created;
     return created;
@@ -384,6 +391,7 @@ class ReaderController extends ChangeNotifier {
       ownerUserId: book.ownerUserId,
       sourceLang: book.sourceLang,
       targetLang: book.targetLang,
+      translationEngine: _readerPreferences.paragraphTranslationEngine,
     );
     _paragraphTranslationController = created;
     return created;

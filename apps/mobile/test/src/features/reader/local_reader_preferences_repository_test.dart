@@ -25,8 +25,9 @@ void main() {
     final preferences = await repository.load();
 
     expect(preferences.fontSize, ReaderPreferences.defaults.fontSize);
-    expect(preferences.lineHeight, 1.72);
-    expect(preferences.paragraphSpacing, 18);
+    expect(preferences.fontSize, 18);
+    expect(preferences.lineHeight, 1.55);
+    expect(preferences.paragraphSpacing, 10);
     expect(preferences.backgroundTheme, ReaderBackgroundTheme.paperWhite);
     expect(preferences.nightModeEnabled, isFalse);
     expect(preferences.previousBackgroundTheme, ReaderBackgroundTheme.paperWhite);
@@ -34,6 +35,11 @@ void main() {
     expect(preferences.eyeProtectionEnabled, isFalse);
     expect(preferences.pageTurnMode, ReaderPageTurnMode.slide);
     expect(preferences.volumeKeyPagingEnabled, isFalse);
+    expect(preferences.lookupTranslationEngine, TranslationEngine.localMachine);
+    expect(preferences.paragraphTranslationEngine, TranslationEngine.ai);
+    expect(preferences.localTranslationModelsReady, isFalse);
+    expect(preferences.aiPrefetchPageCount, 3);
+    expect(preferences.furiganaEnabled, isFalse);
   });
 
   test('persists and reloads global reader preferences', () async {
@@ -48,6 +54,11 @@ void main() {
       eyeProtectionEnabled: true,
       pageTurnMode: ReaderPageTurnMode.cover,
       volumeKeyPagingEnabled: true,
+      lookupTranslationEngine: TranslationEngine.ai,
+      paragraphTranslationEngine: TranslationEngine.localMachine,
+      localTranslationModelsReady: true,
+      aiPrefetchPageCount: 3,
+      furiganaEnabled: true,
     );
 
     await repository.save(saved);
@@ -63,5 +74,10 @@ void main() {
     expect(reloaded.eyeProtectionEnabled, isTrue);
     expect(reloaded.pageTurnMode, ReaderPageTurnMode.cover);
     expect(reloaded.volumeKeyPagingEnabled, isTrue);
+    expect(reloaded.lookupTranslationEngine, TranslationEngine.ai);
+    expect(reloaded.paragraphTranslationEngine, TranslationEngine.localMachine);
+    expect(reloaded.localTranslationModelsReady, isTrue);
+    expect(reloaded.aiPrefetchPageCount, 3);
+    expect(reloaded.furiganaEnabled, isTrue);
   });
 }
